@@ -1,0 +1,22 @@
+:root {
+  --gold: #d4b07a;
+  --gold-bright: #f0d49a;
+  --gold-dim: #a8865a;
+  --gold-shadow: rgba(0, 0, 0, 0.55);
+
+  --text-primary: #f4ead8;
+  --text-secondary: rgba(244, 234, 216, 0.7);
+
+  --pill-ink-top: rgba(20, 12, 30, 0.78);
+  --pill-ink-bot: rgba(8, 4, 16, 0.85);
+
+  --pip: #ff6b6b;
+
+  --pad-x: 22px;
+  --pad-y: 22px;
+
+  --canvas-w: 640px;
+  --canvas-h: 960px;
+
+  --scale: 1;
+}

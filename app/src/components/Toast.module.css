@@ -1,0 +1,23 @@
+.toast {
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background: rgba(8, 4, 16, 0.85);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  color: var(--gold-bright);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 220, 180, 0.08);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.toast.visible {
+  opacity: 1;
+}
