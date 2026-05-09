@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useToastStore } from '../stores/useToastStore';
-import styles from './Toast.module.css';
+import rawStyles from './Toast.module.css';
+import { cm } from '../utils/cssModule';
+const styles = cm(rawStyles);
 
 export const Toast = () => {
   const message = useToastStore((s) => s.message);

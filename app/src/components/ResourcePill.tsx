@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import styles from '../lobby/Lobby.module.css';
+import rawStyles from '../lobby/Lobby.module.css';
+import { cm } from '../utils/cssModule';
+const styles = cm(rawStyles);
 import { IconPlus } from '../lobby/icons';
 
 interface Props {

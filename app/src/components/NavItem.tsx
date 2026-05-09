@@ -1,5 +1,7 @@
 import type { ComponentType } from 'react';
-import styles from '../lobby/Lobby.module.css';
+import rawStyles from '../lobby/Lobby.module.css';
+import { cm } from '../utils/cssModule';
+const styles = cm(rawStyles);
 
 interface NavIconProps {
   active?: boolean;

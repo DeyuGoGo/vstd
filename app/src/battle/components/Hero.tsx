@@ -87,7 +87,7 @@ export const Hero = ({ x, y, hp, hpMax }: Props) => {
       />
 
       <img
-        src="/assets/hero.png"
+        src={`${import.meta.env.BASE_URL}img/hero.png`}
         alt="hero"
         style={{
           width: 150,

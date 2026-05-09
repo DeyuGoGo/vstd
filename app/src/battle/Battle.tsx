@@ -23,7 +23,9 @@ import { PauseOverlay } from './components/PauseOverlay';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { VictoryOverlay } from './components/VictoryOverlay';
 import { LevelUpOverlay } from './components/LevelUpOverlay';
-import styles from './Battle.module.css';
+import rawStyles from './Battle.module.css';
+import { cm } from '../utils/cssModule';
+const styles = cm(rawStyles);
 
 const GAME_W = SCENE_DIMS.battle.w;
 const GAME_H = SCENE_DIMS.battle.h;
@@ -435,7 +437,7 @@ export const Battle = () => {
 
   return (
     <div className={styles.battle}>
-      <img src="/assets/arena-bg.png" alt="" className={styles.bg} />
+      <img src={`${import.meta.env.BASE_URL}img/arena-bg.png`} alt="" className={styles.bg} />
       <div className={styles.vignette} />
 
       <TopBar bossPct={bossPct} gold={gold} onPause={() => setPaused((p) => !p)} />

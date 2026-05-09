@@ -24,7 +24,9 @@ import {
   NavIconStarfield,
   NavIconGuild,
 } from './icons';
-import styles from './Lobby.module.css';
+import rawStyles from './Lobby.module.css';
+import { cm } from '../utils/cssModule';
+const styles = cm(rawStyles);
 
 const numberFmt = new Intl.NumberFormat('en-US');
 
@@ -47,7 +49,7 @@ export const Lobby = () => {
     <div className={styles.lobby}>
       <div
         className={styles.lobbyBg}
-        style={{ backgroundImage: 'url(/assets/bg-clean.png)' }}
+        style={{ backgroundImage: `url(${import.meta.env.BASE_URL}img/bg-clean.png)` }}
       />
       <div className={styles.lobbyVignette} />
 
