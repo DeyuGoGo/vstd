@@ -1,19 +1,12 @@
-import type { Skill } from '../engine/types';
-import { SKILL_DEFS } from '../data/skills';
-import { SkillIcon } from './SkillIcon';
-
 const PANEL_STROKE = 'rgba(180, 140, 255, 0.35)';
 const GOLD = '#f5c95c';
 
 interface Props {
   level: number;
   expPct: number;
-  skills: Skill[];
-  casting: number | null;
-  onCast: (idx: number) => void;
 }
 
-export const BottomBar = ({ level, expPct, skills, casting, onCast }: Props) => (
+export const BottomBar = ({ level, expPct }: Props) => (
   <div
     style={{
       position: 'absolute',
@@ -108,25 +101,6 @@ export const BottomBar = ({ level, expPct, skills, casting, onCast }: Props) => 
           進度 {Math.floor(expPct)}%
         </div>
       </div>
-    </div>
-
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: 18,
-        padding: '0 14px',
-      }}
-    >
-      {skills.map((s, i) => (
-        <SkillIcon
-          key={s.id}
-          skill={s}
-          def={SKILL_DEFS[i]}
-          active={casting === i}
-          onClick={() => onCast(i)}
-        />
-      ))}
     </div>
   </div>
 );

@@ -10,6 +10,8 @@ interface Props {
 
 export const BlessingCard = ({ b, onPick, delay }: Props) => {
   const [hover, setHover] = useState(false);
+  const artSrc = b.art ? `${import.meta.env.BASE_URL}${b.art}` : undefined;
+
   return (
     <button
       onClick={() => onPick(b)}
@@ -88,7 +90,46 @@ export const BlessingCard = ({ b, onPick, delay }: Props) => {
           margin: '6px 0 4px',
         }}
       >
-        <BlessingGlyph kind={b.glyph} tint={b.tint} />
+        {artSrc ? (
+          <div
+            style={{
+              width: 82,
+              height: 82,
+              borderRadius: 16,
+              overflow: 'hidden',
+              position: 'relative',
+              border: `1px solid ${b.tint}88`,
+              background: '#10091d',
+              boxShadow: `0 0 16px ${b.tint}66, inset 0 0 14px rgba(255,255,255,0.08)`,
+            }}
+          >
+            <img
+              src={artSrc}
+              alt=""
+              draggable={false}
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'block',
+                objectFit: 'cover',
+                transform: `scale(${hover ? 1.06 : 1})`,
+                filter: hover ? 'brightness(1.15) saturate(1.12)' : 'brightness(0.98) saturate(1.04)',
+                transition: 'transform 0.2s ease, filter 0.2s ease',
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'linear-gradient(180deg, rgba(255,255,255,0.16), transparent 42%, rgba(0,0,0,0.22)), radial-gradient(circle at 50% 18%, rgba(255,255,255,0.18), transparent 42%)',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        ) : (
+          <BlessingGlyph kind={b.glyph} tint={b.tint} />
+        )}
       </div>
 
       <div

@@ -6,12 +6,10 @@ import {
   type Enemy,
   type Mods,
   type Outcome,
-  type Skill,
 } from './engine/types';
 import { pickThree } from './engine/pickThree';
 import { WAVES, ENEMY_BASE, BOSS_MUL } from './data/waves';
 import type { Blessing } from './data/blessings';
-import { SKILL_DEFS } from './data/skills';
 import { TopBar } from './components/TopBar';
 import { WaveCard } from './components/WaveCard';
 import { Hero } from './components/Hero';
@@ -51,7 +49,6 @@ export const Battle = () => {
   const [gold, setGold] = useState(0);
   const [kills, setKills] = useState(0);
   const [level, setLevel] = useState(1);
-  const [casting, setCasting] = useState<number | null>(null);
   const [levelUp, setLevelUp] = useState<LevelUpState | null>(null);
   const [rerolls, setRerolls] = useState(2);
   const [currentWaveIdx, setCurrentWaveIdx] = useState(0);
@@ -63,17 +60,6 @@ export const Battle = () => {
   useEffect(() => {
     levelRef.current = level;
   }, [level]);
-
-  const skillsRef = useRef<Skill[]>(
-    SKILL_DEFS.map((s) => ({
-      id: s.id,
-      name: s.name,
-      lv: s.lv,
-      cd: 0,
-      cdMax: s.cdMax,
-      bg: s.bg,
-    })),
-  );
 
   // ── helpers ──────────────────────────────────────────
   const spawnEnemy = useCallback(
@@ -150,11 +136,6 @@ export const Battle = () => {
       const running = !paused && !levelUp && outcome === 'running';
 
       if (running) {
-        // skill cooldowns
-        for (const sk of skillsRef.current) {
-          if (sk.cd > 0) sk.cd = Math.max(0, sk.cd - dt);
-        }
-
         // boss spawn (once on wave 20 entry)
         if (isBossWave && !s.bossSpawned) {
           spawnEnemy('brute', true);
@@ -299,8 +280,7 @@ export const Battle = () => {
       const next = wk + 1;
       const wave = WAVES[currentWaveIdx];
       if (wave.isBossWave) return next;
-      const effGoal = Math.max(1, Math.ceil(wave.killGoal * mods.killGoalMul));
-      if (wk < effGoal && next >= effGoal) {
+      if (wk < wave.killGoal && next >= wave.killGoal) {
         setLevelUp((cur) => cur ?? { choices: pickThree(), level: levelRef.current + 1 });
       }
       return next;
@@ -328,87 +308,6 @@ export const Battle = () => {
     setLevelUp((lu) => (lu ? { ...lu, choices: pickThree() } : null));
   };
 
-  // ── skill cast ───────────────────────────────────────
-  const castSkill = useCallback(
-    (idx: number) => {
-      const mods = modsRef.current;
-      const s = stateRef.current;
-      const sk = skillsRef.current[idx];
-      if (!sk || sk.cd > 0) return;
-      sk.cd = sk.cdMax;
-      setCasting(idx);
-      window.setTimeout(() => setCasting(null), 350);
-
-      if (sk.id === 'starlight') {
-        const targets = s.enemies.filter((e) => e.dyingT === 0).slice(0, 6);
-        targets.forEach((t, i) => {
-          window.setTimeout(
-            () => fireAt(t, { dmg: 180 + Math.random() * 60, speed: 460 }),
-            i * 60,
-          );
-        });
-      } else if (sk.id === 'orbit') {
-        const targets = s.enemies.filter((e) => e.dyingT === 0);
-        targets.forEach((t, i) => {
-          window.setTimeout(() => {
-            const dmg = Math.round(120 + Math.random() * 50);
-            t.hp -= dmg;
-            t.hitT = 0.1;
-            s.pops.push({
-              id: s.nextPopId++,
-              x: t.x,
-              y: t.y - 22,
-              t: 0,
-              amount: dmg,
-              crit: false,
-            });
-            if (t.hp <= 0 && t.dyingT === 0) {
-              t.dyingT = 0.01;
-              handleKill(t);
-            }
-          }, i * 35);
-        });
-      } else if (sk.id === 'rain') {
-        for (let i = 0; i < 16; i++) {
-          const x = 40 + Math.random() * (GAME_W - 80);
-          const y = 80 + Math.random() * 380;
-          window.setTimeout(() => {
-            s.pops.push({
-              id: s.nextPopId++,
-              x,
-              y: y - 12,
-              t: 0,
-              amount: '✦',
-              crit: true,
-            });
-            for (const e of s.enemies) {
-              if (e.dyingT === 0 && Math.hypot(e.x - x, e.y - y) < 60) {
-                const dmg = Math.round(80 + Math.random() * 50);
-                e.hp -= dmg;
-                e.hitT = 0.1;
-                s.pops.push({
-                  id: s.nextPopId++,
-                  x: e.x,
-                  y: e.y - 22,
-                  t: 0,
-                  amount: dmg,
-                  crit: false,
-                });
-                if (e.hp <= 0 && e.dyingT === 0) {
-                  e.dyingT = 0.01;
-                  handleKill(e);
-                }
-              }
-            }
-          }, i * 70);
-        }
-      }
-      // suppress lint: mods unused in this branch but conceptually available later
-      void mods;
-    },
-    [fireAt],
-  );
-
   // ── derived UI values ────────────────────────────────
   const s = stateRef.current;
   const wave = WAVES[currentWaveIdx];
@@ -416,8 +315,6 @@ export const Battle = () => {
   const boss = isBossWave && s.bossId != null
     ? s.enemies.find((e) => e.id === s.bossId)
     : undefined;
-
-  const effKillGoal = Math.max(1, Math.ceil(wave.killGoal * modsRef.current.killGoalMul));
 
   // bossPct: in non-boss waves shows wave clear progress (depleting),
   // in boss wave shows actual boss HP.
@@ -427,11 +324,11 @@ export const Battle = () => {
   } else if (isBossWave) {
     bossPct = 0; // boss dead
   } else {
-    bossPct = Math.max(0, 1 - waveKills / effKillGoal);
+    bossPct = Math.max(0, 1 - waveKills / wave.killGoal);
   }
 
   // Bottom bar progress: wave kills as percentage; boss wave shows full bar.
-  const expPct = isBossWave ? 100 : Math.min(100, (waveKills / effKillGoal) * 100);
+  const expPct = isBossWave ? 100 : Math.min(100, (waveKills / wave.killGoal) * 100);
   const hpMax = HP_MAX_BASE + modsRef.current.hpMaxBonus;
   const exitToLobby = () => setScene('lobby');
 
@@ -460,9 +357,6 @@ export const Battle = () => {
       <BottomBar
         level={level}
         expPct={expPct}
-        skills={skillsRef.current}
-        casting={casting}
-        onCast={castSkill}
       />
 
       {paused && outcome === 'running' && !levelUp && (

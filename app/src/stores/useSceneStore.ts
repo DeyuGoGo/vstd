@@ -9,7 +9,7 @@ export interface SceneDims {
 
 export const SCENE_DIMS: Record<Scene, SceneDims> = {
   lobby: { w: 640, h: 960 },
-  battle: { w: 402, h: 874 },
+  battle: { w: 640, h: 960 },
 };
 
 interface SceneState {

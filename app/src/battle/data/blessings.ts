@@ -2,7 +2,6 @@ import type { Mods } from '../engine/types';
 
 export type BlessingId =
   | 'arcane'
-  | 'mana'
   | 'pierce'
   | 'haste'
   | 'crit'
@@ -13,7 +12,6 @@ export type BlessingId =
 
 export type BlessingGlyphKind =
   | 'star8'
-  | 'orb'
   | 'arrows'
   | 'hourglass'
   | 'eye'
@@ -33,6 +31,7 @@ export interface Blessing {
   desc2: string;
   val: string;
   glyph: BlessingGlyphKind;
+  art?: string;
   tint: string;
   active: boolean;
   apply: (mods: Mods, ctx: BlessingCtx) => void;
@@ -44,35 +43,28 @@ export const BLESSINGS: Blessing[] = [
   {
     id: 'arcane', name: '奧能碎片',
     desc: '投射物速度提升 ', desc2: '',
-    val: '20%', glyph: 'star8', tint: '#9ec5ff',
+    val: '20%', glyph: 'star8', art: 'img/blessings/arcane.png', tint: '#9ec5ff',
     active: true,
     apply: (m) => { m.projSpeedMul *= 1.2; },
   },
   {
-    id: 'mana', name: '魔力寶珠',
-    desc: '本波擊殺需求 ', desc2: '',
-    val: '-10%', glyph: 'orb', tint: '#c8a4ff',
-    active: true,
-    apply: (m) => { m.killGoalMul *= 0.9; },
-  },
-  {
     id: 'haste', name: '星墜疾速',
     desc: '攻擊冷卻縮短 ', desc2: '',
-    val: '12%', glyph: 'hourglass', tint: '#a4ffe0',
+    val: '12%', glyph: 'hourglass', art: 'img/blessings/haste.png', tint: '#a4ffe0',
     active: true,
     apply: (m) => { m.fireCdMul *= 0.88; },
   },
   {
     id: 'crit', name: '致命之眼',
     desc: '暴擊率提升 ', desc2: '',
-    val: '8%', glyph: 'eye', tint: '#ffd17a',
+    val: '8%', glyph: 'eye', art: 'img/blessings/crit.png', tint: '#ffd17a',
     active: true,
     apply: (m) => { m.critBonus += 0.08; },
   },
   {
     id: 'crystal', name: '水晶之心',
     desc: '最大生命提升 ', desc2: '',
-    val: '500', glyph: 'heart', tint: '#ff9aae',
+    val: '500', glyph: 'heart', art: 'img/blessings/crystal.png', tint: '#ff9aae',
     active: true,
     apply: (m, ctx) => {
       m.hpMaxBonus += 500;
@@ -82,7 +74,7 @@ export const BLESSINGS: Blessing[] = [
   {
     id: 'echo', name: '星辰回響',
     desc: '每次攻擊額外發射 ', desc2: ' 顆',
-    val: '+1', glyph: 'echo', tint: '#9ec5ff',
+    val: '+1', glyph: 'echo', art: 'img/blessings/echo.png', tint: '#9ec5ff',
     active: true,
     apply: (m) => { m.projPerCast += 1; },
   },
@@ -103,7 +95,7 @@ export const BLESSINGS: Blessing[] = [
   {
     id: 'aura', name: '虛空光環',
     desc: '範圍內持續傷害 ', desc2: '',
-    val: 'NEW', glyph: 'aura', tint: '#c8a4ff',
+    val: 'NEW', glyph: 'aura', art: 'img/blessings/aura.png', tint: '#c8a4ff',
     active: false, apply: noop,
   },
 ];

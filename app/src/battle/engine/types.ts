@@ -35,15 +35,6 @@ export interface Pop {
   crit: boolean;
 }
 
-export interface Skill {
-  id: 'starlight' | 'orbit' | 'rain';
-  name: string;
-  lv: number;
-  cd: number;
-  cdMax: number;
-  bg: string;
-}
-
 export interface Mods {
   projSpeedMul: number;
   fireCdMul: number;
@@ -51,7 +42,6 @@ export interface Mods {
   critBonus: number;
   hpMaxBonus: number;
   goldGainMul: number;
-  killGoalMul: number;
 }
 
 export const initialMods = (): Mods => ({
@@ -61,7 +51,6 @@ export const initialMods = (): Mods => ({
   critBonus: 0,
   hpMaxBonus: 0,
   goldGainMul: 1,
-  killGoalMul: 1,
 });
 
 export interface BattleStateRef {
