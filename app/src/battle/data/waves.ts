@@ -44,8 +44,8 @@ export const WAVES: WaveConfig[] = [
 
 // Base enemy stats (multiplied by wave's enemyHpMul / enemySpeedMul on spawn).
 export const ENEMY_BASE = {
-  minion: { hp: 180, vy: 14 },
-  brute: { hp: 600, vy: 8 },
+  minion: { hp: 180, vy: 20 },
+  brute: { hp: 600, vy: 12 },
 };
 
 // Boss multipliers applied on top of wave 20's enemyHpMul.
