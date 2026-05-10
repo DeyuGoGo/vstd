@@ -24,6 +24,8 @@ export interface Projectile {
   target: number; // enemy id
   dmg: number;
   crit: boolean;
+  pierce: number; // remaining pierces; 0 = stop on first hit
+  hits: number[]; // enemy ids already hit (avoid re-hitting on retarget)
 }
 
 export interface Pop {
@@ -39,6 +41,7 @@ export interface Mods {
   projSpeedMul: number;
   fireCdMul: number;
   projPerCast: number;
+  projPierce: number;
   critBonus: number;
   hpMaxBonus: number;
   goldGainMul: number;
@@ -48,6 +51,7 @@ export const initialMods = (): Mods => ({
   projSpeedMul: 1,
   fireCdMul: 1,
   projPerCast: 1,
+  projPierce: 0,
   critBonus: 0,
   hpMaxBonus: 0,
   goldGainMul: 1,

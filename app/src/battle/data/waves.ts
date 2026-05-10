@@ -51,5 +51,5 @@ export const ENEMY_BASE = {
 export const BOSS_MUL = {
   hpMul: 8,
   speedMul: 0.5,
-  scale: 1.7,
+  scale: 2.5,
 };

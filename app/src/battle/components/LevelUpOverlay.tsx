@@ -50,7 +50,14 @@ export const LevelUpOverlay = ({ choices, level, rerolls, onPick, onReroll }: Pr
       Select a blessing
     </div>
 
-    <div style={{ display: 'flex', gap: 10, marginTop: 26 }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        marginTop: 24,
+      }}
+    >
       {choices.map((b, i) => (
         <BlessingCard key={`${b.id}-${i}`} b={b} onPick={onPick} delay={0.1 + i * 0.08} />
       ))}

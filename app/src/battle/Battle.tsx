@@ -21,6 +21,8 @@ import { PauseOverlay } from './components/PauseOverlay';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { VictoryOverlay } from './components/VictoryOverlay';
 import { LevelUpOverlay } from './components/LevelUpOverlay';
+import { BossIntroOverlay } from './components/BossIntroOverlay';
+import { playSfx, preloadSfx } from '../audio';
 import rawStyles from './Battle.module.css';
 import { cm } from '../utils/cssModule';
 const styles = cm(rawStyles);
@@ -40,6 +42,13 @@ export const Battle = () => {
   const setScene = useSceneStore((s) => s.setScene);
   const stateRef = useRef(createInitialState());
   const modsRef = useRef<Mods>(initialMods());
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const shakeAmpRef = useRef(0);
+  const bossIntroAtRef = useRef(0);
+
+  const triggerShake = useCallback((amp: number) => {
+    if (amp > shakeAmpRef.current) shakeAmpRef.current = amp;
+  }, []);
 
   const [, forceTick] = useState(0);
   const force = useCallback(() => forceTick((v) => v + 1), []);
@@ -60,6 +69,10 @@ export const Battle = () => {
   useEffect(() => {
     levelRef.current = level;
   }, [level]);
+
+  useEffect(() => {
+    preloadSfx();
+  }, []);
 
   // ── helpers ──────────────────────────────────────────
   const spawnEnemy = useCallback(
@@ -116,7 +129,10 @@ export const Battle = () => {
         target: target.id,
         dmg: opts.dmg ?? 60 + Math.random() * 40,
         crit: isCrit,
+        pierce: mods.projPierce,
+        hits: [],
       });
+      playSfx('hero_shoot', 0.72);
     },
     [],
   );
@@ -139,7 +155,10 @@ export const Battle = () => {
         // boss spawn (once on wave 20 entry)
         if (isBossWave && !s.bossSpawned) {
           spawnEnemy('brute', true);
+          playSfx('boss_spawn');
           s.bossSpawned = true;
+          bossIntroAtRef.current = ts;
+          triggerShake(36);
         }
 
         // regular spawning
@@ -187,6 +206,8 @@ export const Battle = () => {
           if (e.y > HERO_Y - 60) {
             const dmg = e.kind === 'brute' ? (e.isBoss ? 80 : 40) : 12;
             setHp((h) => Math.max(0, h - dmg));
+            triggerShake(e.isBoss ? 22 : e.kind === 'brute' ? 14 : 8);
+            playSfx('hero_take_dmg');
             e.dyingT = 0.01;
           }
         }
@@ -213,10 +234,35 @@ export const Battle = () => {
                 amount: dmg,
                 crit: p.crit,
               });
-              p.life = 0;
+              playSfx(p.crit ? 'hit_crit' : 'hit_normal', p.crit ? 0.95 : 0.72);
+              if (p.crit) triggerShake(4);
+              p.hits.push(tgt.id);
               if (tgt.hp <= 0 && tgt.dyingT === 0) {
                 tgt.dyingT = 0.01;
                 handleKill(tgt);
+              }
+              if (p.pierce > 0) {
+                p.pierce -= 1;
+                let bestId = -1;
+                let bestDist = Infinity;
+                for (const e of s.enemies) {
+                  if (e.dyingT !== 0) continue;
+                  if (p.hits.includes(e.id)) continue;
+                  const ex = e.x - p.x;
+                  const ey = e.y - p.y;
+                  const ed = ex * ex + ey * ey;
+                  if (ed < bestDist) {
+                    bestDist = ed;
+                    bestId = e.id;
+                  }
+                }
+                if (bestId !== -1) {
+                  p.target = bestId;
+                } else {
+                  p.life = 0;
+                }
+              } else {
+                p.life = 0;
               }
             } else {
               p.vx += ((dx / len) * 200) * dt;
@@ -243,6 +289,22 @@ export const Battle = () => {
         s.pops = s.pops.filter((d) => d.t < 1);
       }
 
+      // shake decay (runs regardless of pause so existing shake settles)
+      const wrap = wrapRef.current;
+      if (wrap) {
+        if (shakeAmpRef.current > 0.2) {
+          shakeAmpRef.current *= Math.exp(-12 * dt);
+          const ox = (Math.random() - 0.5) * shakeAmpRef.current;
+          const oy = (Math.random() - 0.5) * shakeAmpRef.current;
+          wrap.style.setProperty('--shake-x', `${ox}px`);
+          wrap.style.setProperty('--shake-y', `${oy}px`);
+        } else if (shakeAmpRef.current !== 0) {
+          shakeAmpRef.current = 0;
+          wrap.style.setProperty('--shake-x', '0px');
+          wrap.style.setProperty('--shake-y', '0px');
+        }
+      }
+
       force();
       raf = requestAnimationFrame(loop);
     };
@@ -254,6 +316,7 @@ export const Battle = () => {
   // GameOver guard — react to hp drop
   useEffect(() => {
     if (hp <= 0 && outcome === 'running') {
+      playSfx('game_over');
       setOutcome('gameover');
     }
   }, [hp, outcome]);
@@ -266,6 +329,7 @@ export const Battle = () => {
     if (isBoss) {
       setKills((k) => k + 1);
       setGold((g) => g + Math.round(200 * mods.goldGainMul));
+      playSfx('victory');
       setOutcome('victory');
       return;
     }
@@ -281,7 +345,12 @@ export const Battle = () => {
       const wave = WAVES[currentWaveIdx];
       if (wave.isBossWave) return next;
       if (wk < wave.killGoal && next >= wave.killGoal) {
-        setLevelUp((cur) => cur ?? { choices: pickThree(), level: levelRef.current + 1 });
+        setLevelUp((cur) => {
+          if (cur) return cur;
+          playSfx('wave_clear');
+          window.setTimeout(() => playSfx('level_up'), 120);
+          return { choices: pickThree(), level: levelRef.current + 1 };
+        });
       }
       return next;
     });
@@ -289,6 +358,7 @@ export const Battle = () => {
 
   // ── blessing apply ───────────────────────────────────
   const applyBlessing = (b: Blessing) => {
+    playSfx('ui_card_pick');
     const mods = modsRef.current;
     b.apply(mods, {
       healHp: (n) => {
@@ -304,6 +374,7 @@ export const Battle = () => {
 
   const onReroll = () => {
     if (rerolls <= 0) return;
+    playSfx('ui_reroll');
     setRerolls((r) => r - 1);
     setLevelUp((lu) => (lu ? { ...lu, choices: pickThree() } : null));
   };
@@ -315,6 +386,9 @@ export const Battle = () => {
   const boss = isBossWave && s.bossId != null
     ? s.enemies.find((e) => e.id === s.bossId)
     : undefined;
+
+  const bossIntroActive =
+    bossIntroAtRef.current > 0 && performance.now() - bossIntroAtRef.current < 1400;
 
   // bossPct: in non-boss waves shows wave clear progress (depleting),
   // in boss wave shows actual boss HP.
@@ -330,14 +404,25 @@ export const Battle = () => {
   // Bottom bar progress: wave kills as percentage; boss wave shows full bar.
   const expPct = isBossWave ? 100 : Math.min(100, (waveKills / wave.killGoal) * 100);
   const hpMax = HP_MAX_BASE + modsRef.current.hpMaxBonus;
-  const exitToLobby = () => setScene('lobby');
+  const togglePause = () => {
+    playSfx('ui_pause');
+    setPaused((p) => !p);
+  };
+  const resumeBattle = () => {
+    playSfx('ui_pause');
+    setPaused(false);
+  };
+  const exitToLobby = () => {
+    playSfx('ui_button_tap');
+    setScene('lobby');
+  };
 
   return (
-    <div className={styles.battle}>
+    <div ref={wrapRef} className={styles.battle}>
       <img src={`${import.meta.env.BASE_URL}img/arena-bg.png`} alt="" className={styles.bg} />
       <div className={styles.vignette} />
 
-      <TopBar bossPct={bossPct} gold={gold} onPause={() => setPaused((p) => !p)} />
+      <TopBar bossPct={bossPct} gold={gold} onPause={togglePause} />
       <WaveCard wave={currentWaveIdx + 1} waveMax={WAVES.length} kills={kills} />
 
       {s.enemies.map((e) => (
@@ -359,8 +444,10 @@ export const Battle = () => {
         expPct={expPct}
       />
 
+      {bossIntroActive && <BossIntroOverlay />}
+
       {paused && outcome === 'running' && !levelUp && (
-        <PauseOverlay onResume={() => setPaused(false)} />
+        <PauseOverlay onResume={resumeBattle} />
       )}
 
       {levelUp && outcome === 'running' && (

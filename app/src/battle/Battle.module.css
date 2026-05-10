@@ -7,6 +7,8 @@
   font-family: 'Sora', system-ui, sans-serif;
   user-select: none;
   color: #f4ecff;
+  transform: translate(var(--shake-x, 0), var(--shake-y, 0));
+  will-change: transform;
 }
 
 .bg {
@@ -42,6 +44,37 @@
 @keyframes battle-card-in {
   0% { transform: translateY(40px) scale(0.9); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes battle-boss-flash {
+  0% { opacity: 0.95; }
+  35% { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
+@keyframes battle-boss-text-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  35% { transform: scale(1.18); opacity: 1; }
+  60% { transform: scale(0.96); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes battle-boss-text-out {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+@keyframes battle-boss-aura-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 14px #b388ff) drop-shadow(0 0 28px rgba(255, 80, 140, 0.45)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 26px #d6a8ff) drop-shadow(0 0 48px rgba(255, 100, 160, 0.7)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
+  }
+}
+
+.bossAura {
+  animation: battle-boss-aura-pulse 1.6s ease-in-out infinite;
 }
 
 .fadeIn {

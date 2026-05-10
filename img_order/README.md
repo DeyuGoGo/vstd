@@ -12,10 +12,25 @@
 
 ## 待辦工單
 
-| 編號 | 主題 | 狀態 |
-|------|------|------|
-| 001 | 貪婪之月（gold blessing icon） | 待繪製 |
+（目前無待辦）
+
+## 命名規約
+
+角色 / Boss 美術會交付兩種版本：
+
+- **無後綴**（如 `hero_aoe.png`） = **Q版 chibi**，給戰鬥場景小尺寸渲染用（~150 px 寬）
+- **`_cel` 後綴**（如 `hero_aoe_cel.png`） = **立繪 cel-shaded 全身**，給大廳選角 / 過場 / 選單大圖用
+
+工程預設用無後綴版（Q版）做戰鬥 sprite；_cel 版只有在 lobby UI 加入角色切換時才會被使用。Boss 兩版差異不大（皆為全身比例），目前戰鬥用 `boss.png`（Q版）。
 
 ## 已完成（保留紀錄）
 
-（無）
+| 編號 | 主題 | 交付檔案 | 工程整合狀態 |
+|------|------|---------|------|
+| 001 | 貪婪之月 blessing icon | `blessings/gold.png` | ✅ 已掛 art 欄位 |
+| 002 | 穿刺彈 blessing icon | `blessings/pierce.png` | ✅ 已掛 art 欄位 |
+| 003 | Boss 立繪 | `boss.png` + `boss_cel.png` | ✅ Enemy.tsx 已 swap 用 boss.png；⏳ 獨特行為待做（priority #4）|
+| 004 | AoE 角色 | `hero_aoe.png`（Q版）+ `hero_aoe_cel.png`（立繪） | ⏳ 檔案備齊，roster 整合在 priority #5 |
+| 005 | 控場角色 | `hero_frost.png`（Q版）+ `hero_frost_cel.png`（立繪） | ⏳ 檔案備齊，roster 整合在 priority #6 |
+| 006 | 戰鬥背景低飽和重繪 | `arena-bg.png`（覆蓋舊圖） | ✅ 直接生效 |
+| 007 | 小兵 / 重甲兵立繪化 | `enemy_minion.png` + `enemy_brute.png` | ✅ Enemy.tsx 已從 SVG 換 PNG |

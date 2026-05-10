@@ -81,17 +81,18 @@ export const BLESSINGS: Blessing[] = [
   {
     id: 'gold', name: '貪婪之月',
     desc: '金幣獲取提升 ', desc2: '',
-    val: '25%', glyph: 'coin', tint: '#f5c95c',
+    val: '25%', glyph: 'coin', art: 'img/blessings/gold.png', tint: '#f5c95c',
     active: true,
     apply: (m) => { m.goldGainMul *= 1.25; },
   },
-  // Placeholders, not in the active draw pool.
   {
     id: 'pierce', name: '穿刺彈',
     desc: '投射物穿透 ', desc2: ' 個敵人',
-    val: '+1', glyph: 'arrows', tint: '#d6a4ff',
-    active: false, apply: noop,
+    val: '+1', glyph: 'arrows', art: 'img/blessings/pierce.png', tint: '#d6a4ff',
+    active: true,
+    apply: (m) => { m.projPierce += 1; },
   },
+  // Placeholders, not in the active draw pool.
   {
     id: 'aura', name: '虛空光環',
     desc: '範圍內持續傷害 ', desc2: '',
