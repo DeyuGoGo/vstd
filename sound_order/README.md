@@ -22,22 +22,25 @@
 
 ## 待辦工單
 
-| 編號 | 主題 | 狀態 |
-|------|------|------|
-| 001 | 戰鬥核心音效 pack（9 種戰鬥情境）| 待製作 |
-| 002 | UI 音效 pack（卡片、按鈕）| 待製作 |
+（目前無待辦）
 
 ## 已完成（保留紀錄）
 
-（無）
+| 編號 | 主題 | 交付方式 | 工程整合狀態 |
+|------|------|---------|------|
+| 001 | 戰鬥核心音效 pack（9 種戰鬥情境）| **程式合成** ([tools/generate-sfx.mjs](../tools/generate-sfx.mjs)) | ✅ 已掛 playSfx |
+| 002 | UI 音效 pack（5 種卡片 / 按鈕互動）| **程式合成** | ✅ 已掛 playSfx |
 
-## 替代方案：CC0 免費資源
+兩張票全部由 [tools/generate-sfx.mjs](../tools/generate-sfx.mjs) 程式化合成（sine / triangle / soft-square / noise / 鈴音 / 呼嘯原語疊加），不發外包。
 
-若委外時程吃緊，可先用 CC0 / public-domain 音源臨時上線，工程整合不變。推薦來源：
+**好處**：seed 固定可重現、想調某個音效改幾行重跑即可、無授權問題。
+**用法**：見 [tools/README.md](../tools/README.md)。
 
-- **Kenney.nl** — `https://kenney.nl/assets/category:Audio` — 大量遊戲音效 CC0 包
-- **freesound.org** — 篩選 License = CC0 即可商用免標註
+## 替代方案：CC0 免費資源（保留紀錄供未來 BGM 票參考）
+
+若未來 BGM / 角色語音工單時程吃緊，可先用 CC0 / public-domain 資源：
+
+- **Kenney.nl** — `https://kenney.nl/assets/category:Audio`
+- **freesound.org** — 篩選 License = CC0
 - **OpenGameArt.org** — 篩選 CC0 / CC-BY 0
-- **Sonniss GDC bundles** — 每年 GDC 釋出的免費音效包
-
-委外品質仍會比 CC0 好（風格統一、與美術氣質貼合），但 CC0 可作為驗證 hook 的快速 placeholder。
+- **Sonniss GDC bundles**
