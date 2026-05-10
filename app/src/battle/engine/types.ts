@@ -45,6 +45,10 @@ export interface Mods {
   critBonus: number;
   hpMaxBonus: number;
   goldGainMul: number;
+  // Forward Y-distance the hero will engage enemies within. Belongs to the
+  // character/skill, not a global rule — different heroes/abilities will set
+  // this differently (close-range AoE vs long-range freeze).
+  attackRange: number;
 }
 
 export const initialMods = (): Mods => ({
@@ -55,6 +59,7 @@ export const initialMods = (): Mods => ({
   critBonus: 0,
   hpMaxBonus: 0,
   goldGainMul: 1,
+  attackRange: 515,
 });
 
 export interface BattleStateRef {

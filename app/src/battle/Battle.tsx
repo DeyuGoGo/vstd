@@ -32,7 +32,6 @@ const GAME_H = SCENE_DIMS.battle.h;
 const HERO_X = GAME_W / 2;
 const HERO_Y = GAME_H - 245;
 const HP_MAX_BASE = 3200;
-const ATTACK_RANGE_Y_MIN = 200;
 
 interface LevelUpState {
   choices: Blessing[];
@@ -177,12 +176,14 @@ export const Battle = () => {
           }
         }
 
-        // auto-attack — only target enemies that have descended into attack range
+        // auto-attack — only target enemies that have descended into the
+        // hero's attack range (forward Y distance from hero).
         s.fireT += dt;
         const fireThreshold = 0.42 * mods.fireCdMul;
+        const rangeYMin = HERO_Y - mods.attackRange;
         if (s.fireT > fireThreshold) {
           const sorted = s.enemies
-            .filter((e) => e.dyingT === 0 && e.y > ATTACK_RANGE_Y_MIN)
+            .filter((e) => e.dyingT === 0 && e.y > rangeYMin)
             .sort((a, b) => a.y - b.y);
           if (sorted.length) {
             s.fireT = 0;
