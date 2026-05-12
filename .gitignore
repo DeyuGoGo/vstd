@@ -2,6 +2,7 @@
 
 # Dependencies
 node_modules/
+.codex-venv/
 /.pnp
 .pnp.js
 

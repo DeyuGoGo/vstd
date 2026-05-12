@@ -1,4 +1,4 @@
-import { usePlayerStore } from '../stores/usePlayerStore';
+import { usePlayerStore, BATTLE_STAMINA_COST } from '../stores/usePlayerStore';
 import { useToastStore } from '../stores/useToastStore';
 import { useSceneStore } from '../stores/useSceneStore';
 import { ResourcePill } from '../components/ResourcePill';
@@ -38,25 +38,119 @@ export const Lobby = () => {
   const activeTab = usePlayerStore((s) => s.nav.activeTab);
   const clearMail = usePlayerStore((s) => s.clearMail);
   const setActiveTab = usePlayerStore((s) => s.setActiveTab);
+  const spendStamina = usePlayerStore((s) => s.spendStamina);
   const showToast = useToastStore((s) => s.showToast);
   const setScene = useSceneStore((s) => s.setScene);
 
   const comingSoon = () => showToast('即將推出');
-  const enterBattle = () => setScene('battle');
+  const enterBattle = () => {
+    if (!spendStamina(BATTLE_STAMINA_COST)) {
+      showToast(`體力不足（需 ${BATTLE_STAMINA_COST}）`);
+      return;
+    }
+    setScene('battle');
+  };
   const xpPct = Math.min(100, Math.max(0, (player.xp / player.xpMax) * 100));
 
   return (
     <div className={styles.lobby}>
-      <div
-        className={styles.lobbyBg}
-        style={{ backgroundImage: `url(${import.meta.env.BASE_URL}img/bg-clean.png)` }}
-      />
+      <div className={styles.lobbyScene} aria-hidden="true">
+        <div
+          className={styles.lobbyBg}
+          style={{ backgroundImage: `url(${import.meta.env.BASE_URL}img/lobby-bg-plate.png)` }}
+        />
+        <div className={styles.lobbySceneMotion}>
+          <img
+            className={`${styles.sceneFx} ${styles.moonGlow}`}
+            src={`${import.meta.env.BASE_URL}img/lobby-moon-glow.png`}
+            alt=""
+          />
+          <img
+            className={`${styles.sceneFx} ${styles.warmLights}`}
+            src={`${import.meta.env.BASE_URL}img/lobby-warm-lights.png`}
+            alt=""
+          />
+          <div className={styles.lobbyRig}>
+            <img
+              className={`${styles.spriteLayer} ${styles.rigTrain}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-train.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigVeil}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-veil.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigArmBack}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-arm-back.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigCore}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-core.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigLegs}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-legs.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigArmFront}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-arm-front.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigHead}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-head.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigHeadClosed}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-head-closed.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigPupils}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-pupils.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigHair}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-hair.png`}
+              alt=""
+            />
+            <img
+              className={`${styles.spriteLayer} ${styles.rigSparkles}`}
+              src={`${import.meta.env.BASE_URL}img/lobby-starina-sparkles.png`}
+              alt=""
+            />
+          </div>
+          <div className={styles.cgBreathGlow} />
+        </div>
+        <div className={styles.cgEffects}>
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
       <div className={styles.lobbyVignette} />
 
       {/* Top-left: avatar + name + level + xp */}
       <div className={styles.playerBlock} onClick={comingSoon} role="button" tabIndex={0} aria-label="玩家檔案">
         <div className={styles.avatar}>
-          <div className={styles.avatarImg} />
+          <div
+            className={styles.avatarImg}
+            style={{ backgroundImage: `url(${import.meta.env.BASE_URL}img/starina/avatar.png)` }}
+          />
           <div className={styles.avatarFrame} />
           <div className={styles.avatarLv}>{player.level}</div>
         </div>

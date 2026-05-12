@@ -11,11 +11,17 @@ interface PlayerState {
   clearMail: () => void;
   setActiveTab: (tab: NavTab) => void;
   clearAdventureBadge: () => void;
+  addGold: (amount: number) => void;
+  addGem: (amount: number) => void;
+  addStamina: (amount: number) => void;
+  spendStamina: (amount: number) => boolean;
 }
 
-export const usePlayerStore = create<PlayerState>((set) => ({
-  player: { name: '星奈的指揮官', level: 48, xp: 5680, xpMax: 7200 },
-  wallet: { stamina: 24, staminaMax: 120, gold: 328450, gem: 8860 },
+export const BATTLE_STAMINA_COST = 30;
+
+export const usePlayerStore = create<PlayerState>((set, get) => ({
+  player: { name: '星奈的指揮官', level: 1, xp: 0, xpMax: 100 },
+  wallet: { stamina: 120, staminaMax: 120, gold: 1_000_000, gem: 10_000 },
   mail: { unreadCount: 1 },
   notifications: { adventure: true },
   nav: { activeTab: 'home' },
@@ -24,4 +30,21 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   setActiveTab: (tab) => set({ nav: { activeTab: tab } }),
   clearAdventureBadge: () =>
     set((s) => ({ notifications: { ...s.notifications, adventure: false } })),
+  addGold: (amount) =>
+    set((s) => ({ wallet: { ...s.wallet, gold: Math.max(0, s.wallet.gold + amount) } })),
+  addGem: (amount) =>
+    set((s) => ({ wallet: { ...s.wallet, gem: Math.max(0, s.wallet.gem + amount) } })),
+  addStamina: (amount) =>
+    set((s) => ({
+      wallet: {
+        ...s.wallet,
+        stamina: Math.max(0, Math.min(s.wallet.staminaMax, s.wallet.stamina + amount)),
+      },
+    })),
+  spendStamina: (amount) => {
+    const { wallet } = get();
+    if (wallet.stamina < amount) return false;
+    set((s) => ({ wallet: { ...s.wallet, stamina: s.wallet.stamina - amount } }));
+    return true;
+  },
 }));
