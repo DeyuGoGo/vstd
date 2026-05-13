@@ -47,10 +47,12 @@ const lobbyStarinaLayers = [
   ['mouth.png', 'rigMouth'],
   ['earwear.png', 'rigEarwear'],
   ['nose.png', 'rigNose'],
+] as const;
+
+const lobbyStarinaEyeLayers = [
   ['eyelash.png', 'rigEyelash'],
   ['eyewhite.png', 'rigEyewhite'],
   ['irides.png', 'rigIrides'],
-  ['front-hair.png', 'rigFrontHair'],
 ] as const;
 
 export const Lobby = () => {
@@ -104,6 +106,33 @@ export const Lobby = () => {
                 alt=""
               />
             ))}
+            <div className={styles.rigEyesGroupFloat}>
+              <div className={styles.rigEyesGroupBlinkLeft}>
+                {lobbyStarinaEyeLayers.map(([file, className]) => (
+                  <img
+                    key={`L-${file}`}
+                    className={`${styles.spriteLayer} ${styles[className]}`}
+                    src={`${lobbyStarinaPath}${file}`}
+                    alt=""
+                  />
+                ))}
+              </div>
+              <div className={styles.rigEyesGroupBlinkRight}>
+                {lobbyStarinaEyeLayers.map(([file, className]) => (
+                  <img
+                    key={`R-${file}`}
+                    className={`${styles.spriteLayer} ${styles[className]}`}
+                    src={`${lobbyStarinaPath}${file}`}
+                    alt=""
+                  />
+                ))}
+              </div>
+            </div>
+            <img
+              className={`${styles.spriteLayer} ${styles.rigFrontHair}`}
+              src={`${lobbyStarinaPath}front-hair.png`}
+              alt=""
+            />
           </div>
           <div className={styles.cgBreathGlow} />
         </div>
