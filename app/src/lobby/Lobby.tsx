@@ -1,4 +1,4 @@
-import { usePlayerStore } from '../stores/usePlayerStore';
+import { usePlayerStore, BATTLE_STAMINA_COST } from '../stores/usePlayerStore';
 import { useToastStore } from '../stores/useToastStore';
 import { useSceneStore } from '../stores/useSceneStore';
 import { ResourcePill } from '../components/ResourcePill';
@@ -30,6 +30,29 @@ const styles = cm(rawStyles);
 
 const numberFmt = new Intl.NumberFormat('en-US');
 
+const lobbyStarinaLayers = [
+  ['back-hair.png', 'rigBackHair'],
+  ['objects.png', 'rigObjects'],
+  ['headwear.png', 'rigHeadwear'],
+  ['bottomwear.png', 'rigBottomwear'],
+  ['handwear-left.png', 'rigHandwearLeft'],
+  ['legwear.png', 'rigLegwear'],
+  ['footwear.png', 'rigFootwear'],
+  ['topwear.png', 'rigTopwear'],
+  ['handwear-right.png', 'rigHandwearRight'],
+  ['neck.png', 'rigNeck'],
+  ['eyebrow.png', 'rigEyebrow'],
+  ['ears.png', 'rigEars'],
+  ['face.png', 'rigFace'],
+  ['mouth.png', 'rigMouth'],
+  ['earwear.png', 'rigEarwear'],
+  ['nose.png', 'rigNose'],
+  ['eyelash.png', 'rigEyelash'],
+  ['eyewhite.png', 'rigEyewhite'],
+  ['irides.png', 'rigIrides'],
+  ['front-hair.png', 'rigFrontHair'],
+] as const;
+
 export const Lobby = () => {
   const player = usePlayerStore((s) => s.player);
   const wallet = usePlayerStore((s) => s.wallet);
@@ -38,25 +61,74 @@ export const Lobby = () => {
   const activeTab = usePlayerStore((s) => s.nav.activeTab);
   const clearMail = usePlayerStore((s) => s.clearMail);
   const setActiveTab = usePlayerStore((s) => s.setActiveTab);
+  const spendStamina = usePlayerStore((s) => s.spendStamina);
   const showToast = useToastStore((s) => s.showToast);
   const setScene = useSceneStore((s) => s.setScene);
 
   const comingSoon = () => showToast('即將推出');
-  const enterBattle = () => setScene('battle');
+  const enterBattle = () => {
+    if (!spendStamina(BATTLE_STAMINA_COST)) {
+      showToast(`體力不足（需 ${BATTLE_STAMINA_COST}）`);
+      return;
+    }
+    setScene('battle');
+  };
   const xpPct = Math.min(100, Math.max(0, (player.xp / player.xpMax) * 100));
+  const baseUrl = import.meta.env.BASE_URL;
+  const lobbyStarinaPath = `${baseUrl}img/lobby-starina-cutout/`;
 
   return (
     <div className={styles.lobby}>
-      <div
-        className={styles.lobbyBg}
-        style={{ backgroundImage: `url(${import.meta.env.BASE_URL}img/bg-clean.png)` }}
-      />
+      <div className={styles.lobbyScene} aria-hidden="true">
+        <div
+          className={styles.lobbyBg}
+          style={{ backgroundImage: `url(${baseUrl}img/lobby-bg-plate.png)` }}
+        />
+        <div className={styles.lobbySceneMotion}>
+          <img
+            className={`${styles.sceneFx} ${styles.moonGlow}`}
+            src={`${baseUrl}img/lobby-moon-glow.png`}
+            alt=""
+          />
+          <img
+            className={`${styles.sceneFx} ${styles.warmLights}`}
+            src={`${baseUrl}img/lobby-warm-lights.png`}
+            alt=""
+          />
+          <div className={styles.lobbyRig}>
+            {lobbyStarinaLayers.map(([file, className]) => (
+              <img
+                key={file}
+                className={`${styles.spriteLayer} ${styles[className]}`}
+                src={`${lobbyStarinaPath}${file}`}
+                alt=""
+              />
+            ))}
+          </div>
+          <div className={styles.cgBreathGlow} />
+        </div>
+        <div className={styles.cgEffects}>
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
       <div className={styles.lobbyVignette} />
 
       {/* Top-left: avatar + name + level + xp */}
       <div className={styles.playerBlock} onClick={comingSoon} role="button" tabIndex={0} aria-label="玩家檔案">
         <div className={styles.avatar}>
-          <div className={styles.avatarImg} />
+          <div
+            className={styles.avatarImg}
+            style={{ backgroundImage: `url(${baseUrl}img/starina/avatar.png)` }}
+          />
           <div className={styles.avatarFrame} />
           <div className={styles.avatarLv}>{player.level}</div>
         </div>
