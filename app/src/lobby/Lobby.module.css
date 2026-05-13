@@ -64,100 +64,113 @@
 
 .lobby-rig {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 8px;
   z-index: 4;
+  width: 1040px;
+  height: 1040px;
+  translate: -50% 0;
   transform-origin: 51% 58%;
-  animation: lobbyRigBreath 5.8s ease-in-out infinite;
+  animation: lobbyRigBreath 6.2s ease-in-out infinite;
   will-change: transform;
 }
 
 .sprite-layer {
+  object-fit: contain;
   filter: contrast(1.02) saturate(1.01);
   transform-origin: 50% 50%;
+  will-change: transform, opacity;
 }
 
-.rig-train {
+.rig-back-hair {
   z-index: 1;
-  opacity: 0.96;
-  transform-origin: 51% 72%;
-  animation: trainSway 8.4s ease-in-out infinite;
+  opacity: 0.95;
+  transform-origin: 49% 42%;
+  animation: backHairBreath 7.8s ease-in-out infinite;
 }
 
-.rig-veil {
+.rig-objects {
   z-index: 2;
-  opacity: 0.94;
-  transform-origin: 50% 54%;
-  animation: veilDrift 7.4s ease-in-out infinite;
+  opacity: 0.92;
+  transform-origin: 53% 66%;
+  animation: trainSway 8.6s ease-in-out infinite;
 }
 
-.rig-arm-back {
+.rig-headwear {
   z-index: 3;
-  opacity: 0.96;
-  transform-origin: 39% 38%;
-  animation: armSwayBack 6.8s ease-in-out infinite;
+  transform-origin: 52% 16%;
+  animation: headFloat 6.2s ease-in-out infinite;
 }
 
-.rig-core {
-  z-index: 4;
-  opacity: 0.96;
-  transform-origin: 52% 48%;
-  animation: coreBreath 5.8s ease-in-out infinite;
+.rig-footwear {
+  z-index: 7;
+  opacity: 0.98;
+  transform-origin: 52% 78%;
+  animation: lowerWeightShift 7.6s ease-in-out infinite;
 }
 
-.rig-legs {
-  z-index: 5;
-  opacity: 0.46;
-  transform-origin: 53% 76%;
-  animation: legWeightShift 7.2s ease-in-out infinite;
-}
-
-.rig-arm-front {
+.rig-legwear {
   z-index: 6;
   opacity: 0.98;
-  transform-origin: 66% 42%;
-  animation: armSwayFront 6.2s ease-in-out infinite;
+  transform-origin: 53% 66%;
+  animation: lowerWeightShift 7.6s ease-in-out infinite;
 }
 
-.rig-head {
-  z-index: 7;
-  opacity: 0.94;
-  transform-origin: 54% 20%;
-  animation:
-    headFloat 5.8s ease-in-out infinite,
-    headOpenBlink 5.4s linear infinite;
+.rig-bottomwear {
+  z-index: 4;
+  opacity: 0.98;
+  transform-origin: 52% 72%;
+  animation: trainSway 8.6s ease-in-out infinite;
 }
 
-.rig-pupils {
+.rig-handwear-left {
+  z-index: 5;
+  opacity: 0.96;
+  transform-origin: 63% 38%;
+  animation: sleeveBreath 6.8s ease-in-out infinite;
+}
+
+.rig-topwear {
   z-index: 8;
-  opacity: 0.92;
-  transform-origin: 54% 15%;
-  animation:
-    pupilSaccade 5.2s steps(1, end) infinite,
-    pupilBlink 5.4s linear infinite;
+  opacity: 0.98;
+  transform-origin: 52% 38%;
+  animation: coreBreath 6.2s ease-in-out infinite;
 }
 
-.rig-head-closed {
+.rig-handwear-right {
   z-index: 9;
-  opacity: 0;
-  transform-origin: 54% 20%;
-  animation:
-    headFloat 5.8s ease-in-out infinite,
-    headClosedBlink 5.4s linear infinite;
+  opacity: 0.96;
+  transform-origin: 43% 38%;
+  animation: sleeveBreath 6.8s ease-in-out infinite;
 }
 
-.rig-hair {
+.rig-neck,
+.rig-eyebrow,
+.rig-ears,
+.rig-face,
+.rig-mouth,
+.rig-earwear,
+.rig-nose,
+.rig-eyelash,
+.rig-eyewhite {
   z-index: 10;
-  opacity: 0.92;
-  transform-origin: 44% 22%;
-  animation: hairSway 6.6s ease-in-out infinite;
+  transform-origin: 53% 16%;
+  animation: headFloat 6.2s ease-in-out infinite;
 }
 
-.rig-sparkles {
+.rig-irides {
   z-index: 11;
-  opacity: 0.58;
-  mix-blend-mode: screen;
-  animation: sparkleTwinkle 2.8s ease-in-out infinite;
-  will-change: transform;
+  transform-origin: 53% 16%;
+  animation:
+    headFloat 6.2s ease-in-out infinite,
+    eyeDrift 5.4s steps(1, end) infinite;
+}
+
+.rig-front-hair {
+  z-index: 12;
+  opacity: 0.96;
+  transform-origin: 53% 15%;
+  animation: frontHairBreath 6.6s ease-in-out infinite;
 }
 
 .cg-breath-glow {
@@ -226,10 +239,10 @@
 @keyframes lobbyRigBreath {
   0%,
   100% {
-    transform: translate3d(-1px, 1px, 0) rotate(-0.04deg) scale(1.002);
+    transform: translate3d(-1px, 2px, 0) rotate(-0.035deg) scale(1);
   }
   50% {
-    transform: translate3d(1px, -3px, 0) rotate(0.04deg) scale(1.006, 1.011);
+    transform: translate3d(1px, -4px, 0) rotate(0.045deg) scale(1.004, 1.01);
   }
 }
 
@@ -239,152 +252,83 @@
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(0, -2px, 0) scale(1.002, 1.006);
+    transform: translate3d(0, -3px, 0) scale(1.003, 1.009);
   }
 }
 
 @keyframes headFloat {
   0%,
   100% {
-    transform: translate3d(0, 0, 0) rotate(-0.08deg);
+    transform: translate3d(0, 0, 0) rotate(-0.05deg);
   }
   50% {
-    transform: translate3d(1px, -2px, 0) rotate(0.12deg);
+    transform: translate3d(1px, -3px, 0) rotate(0.08deg);
   }
 }
 
-@keyframes armSwayBack {
+@keyframes sleeveBreath {
   0%,
   100% {
-    transform: translate3d(-2px, 1px, 0) rotate(-0.72deg);
+    transform: translate3d(-2px, 2px, 0) rotate(-0.22deg) scale(1);
   }
   50% {
-    transform: translate3d(2px, -1px, 0) rotate(0.78deg);
+    transform: translate3d(2px, -2px, 0) rotate(0.28deg) scale(1.002);
   }
 }
 
-@keyframes armSwayFront {
+@keyframes lowerWeightShift {
   0%,
   100% {
-    transform: translate3d(1px, 1px, 0) rotate(0.62deg);
+    transform: translate3d(-1px, 1px, 0) rotate(-0.04deg);
   }
   50% {
-    transform: translate3d(-2px, -1px, 0) rotate(-0.74deg);
+    transform: translate3d(1px, -1px, 0) rotate(0.06deg);
   }
 }
 
-@keyframes legWeightShift {
+@keyframes backHairBreath {
   0%,
   100% {
-    transform: translate3d(-1px, 1px, 0) rotate(-0.08deg);
+    transform: translate3d(-3px, 2px, 0) rotate(-0.18deg) scale(1);
   }
   50% {
-    transform: translate3d(1px, -1px, 0) rotate(0.12deg);
+    transform: translate3d(4px, -3px, 0) rotate(0.24deg) scale(1.004);
   }
 }
 
-@keyframes hairSway {
+@keyframes frontHairBreath {
   0%,
   100% {
-    transform: translate3d(-2px, 1px, 0) rotate(-0.45deg) scale(1.001);
+    transform: translate3d(-1px, 1px, 0) rotate(-0.1deg) scale(1);
   }
   50% {
-    transform: translate3d(3px, -2px, 0) rotate(0.55deg) scale(1.004);
-  }
-}
-
-@keyframes veilDrift {
-  0%,
-  100% {
-    transform: translate3d(-2px, 2px, 0) rotate(-0.22deg);
-  }
-  50% {
-    transform: translate3d(2px, -2px, 0) rotate(0.28deg);
+    transform: translate3d(2px, -2px, 0) rotate(0.14deg) scale(1.002);
   }
 }
 
 @keyframes trainSway {
   0%,
   100% {
-    transform: translate3d(-2px, 2px, 0) rotate(-0.16deg);
+    transform: translate3d(-2px, 2px, 0) rotate(-0.1deg);
   }
   50% {
-    transform: translate3d(3px, -1px, 0) rotate(0.2deg);
+    transform: translate3d(3px, -2px, 0) rotate(0.14deg);
   }
 }
 
-@keyframes pupilSaccade {
+@keyframes eyeDrift {
   0%,
-  18%,
+  20%,
   100% {
-    transform: translate3d(0, 0, 0);
+    translate: 0 0;
   }
-  22%,
-  38% {
-    transform: translate3d(2px, -1px, 0);
-  }
-  42%,
-  62% {
-    transform: translate3d(-2px, 1px, 0);
-  }
-  66%,
-  82% {
-    transform: translate3d(1px, 1px, 0);
-  }
-}
-
-@keyframes pupilBlink {
-  0%,
-  88%,
-  91%,
-  100% {
-    opacity: 0.92;
-  }
-  89.1%,
-  90.2% {
-    opacity: 0;
-  }
-}
-
-@keyframes headOpenBlink {
-  0%,
-  88%,
-  91%,
-  100% {
-    opacity: 0.94;
-  }
-  89.1%,
-  90.2% {
-    opacity: 0;
-  }
-}
-
-@keyframes headClosedBlink {
-  0%,
-  88%,
-  91%,
-  100% {
-    opacity: 0;
-  }
-  89.1%,
-  90.2% {
-    opacity: 0.94;
-  }
-}
-
-@keyframes sparkleTwinkle {
-  0%,
-  100% {
-    opacity: 0.38;
-    filter: brightness(1);
-  }
+  24%,
   48% {
-    opacity: 0.82;
-    filter: brightness(1.28);
+    translate: 1px -1px;
   }
-  62% {
-    opacity: 0.5;
-    filter: brightness(1.05);
+  52%,
+  74% {
+    translate: -2px 1px;
   }
 }
 
