@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Heart } from '../icons';
+import { Z } from '../zIndex';
 
 const PANEL_STROKE = 'rgba(180, 140, 255, 0.35)';
 
@@ -7,10 +9,23 @@ interface Props {
   y: number;
   hp: number;
   hpMax: number;
+  attackTick: number;
 }
 
-export const Hero = ({ x, y, hp, hpMax }: Props) => {
+export const Hero = ({ x, y, hp, hpMax, attackTick }: Props) => {
+  const [pose, setPose] = useState<'idle' | 'attack'>('idle');
   const pct = Math.max(0, hp / hpMax);
+  const assetBase = `${import.meta.env.BASE_URL}img/starina/`;
+
+  useEffect(() => {
+    if (attackTick === 0) return;
+    setPose('attack');
+    const timer = window.setTimeout(() => setPose('idle'), 180);
+    return () => window.clearTimeout(timer);
+  }, [attackTick]);
+
+  const isAttack = pose === 'attack';
+
   return (
     <div
       style={{
@@ -18,15 +33,17 @@ export const Hero = ({ x, y, hp, hpMax }: Props) => {
         left: x,
         top: y,
         transform: 'translate(-50%, -50%)',
-        zIndex: 12,
+        zIndex: Z.HERO,
         pointerEvents: 'none',
+        width: 120,
+        height: 135,
       }}
     >
       <div
         style={{
           position: 'absolute',
           left: '50%',
-          top: -84,
+          top: -28,
           transform: 'translateX(-50%)',
           display: 'flex',
           alignItems: 'center',
@@ -76,10 +93,10 @@ export const Hero = ({ x, y, hp, hpMax }: Props) => {
         style={{
           position: 'absolute',
           left: '50%',
-          top: 30,
+          top: 101,
           transform: 'translateX(-50%)',
-          width: 130,
-          height: 30,
+          width: 58,
+          height: 12,
           borderRadius: '50%',
           background: 'radial-gradient(closest-side, rgba(179,136,255,0.55), transparent)',
           filter: 'blur(2px)',
@@ -87,13 +104,65 @@ export const Hero = ({ x, y, hp, hpMax }: Props) => {
       />
 
       <img
-        src={`${import.meta.env.BASE_URL}img/hero.png`}
-        alt="hero"
+        src={`${assetBase}${isAttack ? 'base_attack.png' : 'base_idle.png'}`}
+        alt=""
         style={{
-          width: 150,
+          position: 'absolute',
+          left: isAttack ? 26 : 24,
+          top: isAttack ? 14 : 15,
+          width: 61,
           height: 'auto',
           display: 'block',
           filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.6))',
+          zIndex: 2,
+          transition: 'left 80ms ease-out, top 80ms ease-out',
+        }}
+      />
+
+      <img
+        src={`${assetBase}weapon_stardust_staff.png`}
+        alt=""
+        style={{
+          position: 'absolute',
+          left: isAttack ? 38 : 30,
+          top: isAttack ? 6 : 11,
+          width: isAttack ? 61 : 57,
+          height: 'auto',
+          display: 'block',
+          filter: 'drop-shadow(0 0 8px rgba(179, 136, 255, 0.7))',
+          zIndex: 1,
+          transition: 'left 80ms ease-out, top 80ms ease-out, width 80ms ease-out',
+        }}
+      />
+
+      <img
+        src={`${assetBase}headgear_star_crown.png`}
+        alt=""
+        style={{
+          position: 'absolute',
+          left: isAttack ? 43 : 40,
+          top: isAttack ? 7 : 8,
+          width: 34,
+          height: 'auto',
+          display: 'block',
+          filter: 'drop-shadow(0 0 5px rgba(179, 136, 255, 0.4))',
+          zIndex: 4,
+          transition: 'left 80ms ease-out, top 80ms ease-out',
+        }}
+      />
+
+      <img
+        src={`${assetBase}hand_cover.png`}
+        alt=""
+        style={{
+          position: 'absolute',
+          left: isAttack ? 53 : 46,
+          top: isAttack ? 52 : 58,
+          width: 19,
+          height: 'auto',
+          display: 'block',
+          zIndex: 5,
+          transition: 'left 80ms ease-out, top 80ms ease-out',
         }}
       />
     </div>

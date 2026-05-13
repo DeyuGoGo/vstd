@@ -1,3 +1,5 @@
+import { Z } from '../zIndex';
+
 interface Props {
   onResume: () => void;
 }
@@ -8,7 +10,7 @@ export const PauseOverlay = ({ onResume }: Props) => (
     style={{
       position: 'absolute',
       inset: 0,
-      zIndex: 100,
+      zIndex: Z.OVERLAY,
       background: 'rgba(5,2,12,0.78)',
       backdropFilter: 'blur(6px)',
       WebkitBackdropFilter: 'blur(6px)',

@@ -1,6 +1,7 @@
 import type { Blessing } from '../data/blessings';
 import { BlessingCard } from './BlessingCard';
 import { DiceIcon, SmallCoin } from '../icons';
+import { Z } from '../zIndex';
 
 interface Props {
   choices: Blessing[];
@@ -15,7 +16,7 @@ export const LevelUpOverlay = ({ choices, level, rerolls, onPick, onReroll }: Pr
     style={{
       position: 'absolute',
       inset: 0,
-      zIndex: 200,
+      zIndex: Z.OVERLAY,
       background: 'rgba(5,2,12,0.55)',
       backdropFilter: 'blur(3px)',
       WebkitBackdropFilter: 'blur(3px)',

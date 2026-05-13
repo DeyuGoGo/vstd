@@ -1,3 +1,5 @@
+import { Z } from '../zIndex';
+
 interface Props {
   kills: number;
   gold: number;
@@ -10,7 +12,7 @@ export const VictoryOverlay = ({ kills, gold, onExit }: Props) => (
     style={{
       position: 'absolute',
       inset: 0,
-      zIndex: 200,
+      zIndex: Z.OVERLAY,
       background: 'rgba(5,2,12,0.85)',
       backdropFilter: 'blur(6px)',
       WebkitBackdropFilter: 'blur(6px)',

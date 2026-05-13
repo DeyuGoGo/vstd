@@ -26,6 +26,7 @@ export interface Projectile {
   crit: boolean;
   pierce: number; // remaining pierces; 0 = stop on first hit
   hits: number[]; // enemy ids already hit (avoid re-hitting on retarget)
+  straight?: boolean; // true = no homing; collides with any enemy in flight path
 }
 
 export interface Pop {

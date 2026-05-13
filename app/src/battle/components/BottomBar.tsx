@@ -1,19 +1,22 @@
+import { Z } from '../zIndex';
+
 const PANEL_STROKE = 'rgba(180, 140, 255, 0.35)';
 const GOLD = '#f5c95c';
 
 interface Props {
-  level: number;
+  wave: number;
+  waveMax: number;
   expPct: number;
 }
 
-export const BottomBar = ({ level, expPct }: Props) => (
+export const BottomBar = ({ wave, waveMax, expPct }: Props) => (
   <div
     style={{
       position: 'absolute',
       left: 0,
       right: 0,
       bottom: 0,
-      zIndex: 1000,
+      zIndex: Z.HUD,
       padding: '0 0 16px',
     }}
   >
@@ -52,16 +55,16 @@ export const BottomBar = ({ level, expPct }: Props) => (
             marginTop: 6,
           }}
         >
-          Lv.
+          WAVE
         </span>
         <span
           style={{
-            font: '800 18px/1 Sora, sans-serif',
+            font: '800 16px/1 Sora, sans-serif',
             color: '#fff',
             marginBottom: 6,
           }}
         >
-          {level}
+          {wave}
         </span>
       </div>
 
@@ -98,7 +101,7 @@ export const BottomBar = ({ level, expPct }: Props) => (
             textShadow: '0 1px 2px rgba(0,0,0,0.8)',
           }}
         >
-          進度 {Math.floor(expPct)}%
+          {wave} / {waveMax} · 進度 {Math.floor(expPct)}%
         </div>
       </div>
     </div>

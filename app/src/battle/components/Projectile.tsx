@@ -1,5 +1,6 @@
 import type { Projectile as ProjectileT } from '../engine/types';
 import { ProjectileSparkle } from '../icons';
+import { Z } from '../zIndex';
 
 interface Props {
   p: ProjectileT;
@@ -13,7 +14,7 @@ export const Projectile = ({ p }: Props) => (
       top: p.y,
       transform: 'translate(-50%, -50%)',
       pointerEvents: 'none',
-      zIndex: 20,
+      zIndex: Z.PROJECTILE,
     }}
   >
     <ProjectileSparkle rot={p.rot} />

@@ -1,5 +1,6 @@
 import type { Enemy as EnemyT } from '../engine/types';
 import { BOSS_MUL } from '../data/waves';
+import { Z } from '../zIndex';
 import rawStyles from '../Battle.module.css';
 import { cm } from '../../utils/cssModule';
 const styles = cm(rawStyles);
@@ -16,8 +17,8 @@ const SRC: Record<string, string> = {
 
 export const Enemy = ({ e }: Props) => {
   const isBrute = e.kind === 'brute';
-  const baseW = isBrute ? 56 : 36;
-  const baseH = isBrute ? 64 : 44;
+  const baseW = isBrute ? 112 : 72;
+  const baseH = isBrute ? 128 : 88;
   const w = e.isBoss ? baseW * BOSS_MUL.scale : baseW;
   const h = e.isBoss ? baseH * BOSS_MUL.scale : baseH;
   const src = e.isBoss ? SRC.boss : SRC[e.kind];
@@ -36,7 +37,7 @@ export const Enemy = ({ e }: Props) => {
         transition: e.dyingT
           ? 'transform 0.25s ease-in, opacity 0.25s ease-in'
           : 'none',
-        zIndex: Math.min(900, Math.floor(e.y)),
+        zIndex: Math.min(Z.ENEMY_MAX, Math.floor(e.y)),
         pointerEvents: 'none',
         // Non-boss gets a static drop-shadow; boss gets pulsing animation via class.
         filter: e.isBoss

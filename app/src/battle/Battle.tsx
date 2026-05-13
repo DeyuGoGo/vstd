@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSceneStore, SCENE_DIMS } from '../stores/useSceneStore';
+import { usePlayerStore } from '../stores/usePlayerStore';
 import {
   createInitialState,
   initialMods,
@@ -11,7 +12,6 @@ import { pickThree } from './engine/pickThree';
 import { WAVES, ENEMY_BASE, BOSS_MUL } from './data/waves';
 import type { Blessing } from './data/blessings';
 import { TopBar } from './components/TopBar';
-import { WaveCard } from './components/WaveCard';
 import { Hero } from './components/Hero';
 import { Enemy as EnemyComp } from './components/Enemy';
 import { Projectile as ProjectileComp } from './components/Projectile';
@@ -21,7 +21,6 @@ import { PauseOverlay } from './components/PauseOverlay';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { VictoryOverlay } from './components/VictoryOverlay';
 import { LevelUpOverlay } from './components/LevelUpOverlay';
-import { BossIntroOverlay } from './components/BossIntroOverlay';
 import { playSfx, preloadSfx } from '../audio';
 import rawStyles from './Battle.module.css';
 import { cm } from '../utils/cssModule';
@@ -30,7 +29,7 @@ const styles = cm(rawStyles);
 const GAME_W = SCENE_DIMS.battle.w;
 const GAME_H = SCENE_DIMS.battle.h;
 const HERO_X = GAME_W / 2;
-const HERO_Y = GAME_H - 245;
+const HERO_Y = GAME_H - 165;
 const HP_MAX_BASE = 3200;
 
 interface LevelUpState {
@@ -40,11 +39,12 @@ interface LevelUpState {
 
 export const Battle = () => {
   const setScene = useSceneStore((s) => s.setScene);
+  const addGold = usePlayerStore((s) => s.addGold);
+  const settledRef = useRef(false);
   const stateRef = useRef(createInitialState());
   const modsRef = useRef<Mods>(initialMods());
   const wrapRef = useRef<HTMLDivElement>(null);
   const shakeAmpRef = useRef(0);
-  const bossIntroAtRef = useRef(0);
 
   const triggerShake = useCallback((amp: number) => {
     if (amp > shakeAmpRef.current) shakeAmpRef.current = amp;
@@ -63,6 +63,7 @@ export const Battle = () => {
   const [currentWaveIdx, setCurrentWaveIdx] = useState(0);
   const [waveKills, setWaveKills] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>('running');
+  const [attackTick, setAttackTick] = useState(0);
 
   // Mirror level into a ref so handleKill (called from rAF loop) reads fresh value
   const levelRef = useRef(level);
@@ -110,7 +111,10 @@ export const Battle = () => {
   );
 
   const fireAt = useCallback(
-    (target: Enemy, opts: { speed?: number; dmg?: number } = {}) => {
+    (
+      target: Enemy,
+      opts: { speed?: number; dmg?: number; lateral?: number; straight?: boolean } = {},
+    ) => {
       const mods = modsRef.current;
       const s = stateRef.current;
       const dx = target.x - HERO_X;
@@ -118,12 +122,19 @@ export const Battle = () => {
       const len = Math.hypot(dx, dy) || 1;
       const speed = (opts.speed ?? 380) * mods.projSpeedMul;
       const isCrit = Math.random() < 0.18 + mods.critBonus;
+      const nx = dx / len;
+      const ny = dy / len;
+      // perpendicular unit (left side); offset the spawn for side bullets
+      const lateral = opts.lateral ?? 0;
+      const px = -ny;
+      const py = nx;
+      const jitter = lateral === 0 ? (Math.random() - 0.5) * 20 : 0;
       s.projectiles.push({
         id: s.nextProjId++,
-        x: HERO_X + (Math.random() - 0.5) * 20,
-        y: HERO_Y - 30,
-        vx: (dx / len) * speed,
-        vy: (dy / len) * speed,
+        x: HERO_X + px * lateral + jitter,
+        y: HERO_Y - 30 + py * lateral,
+        vx: nx * speed,
+        vy: ny * speed,
         rot: Math.atan2(dy, dx) + Math.PI / 2,
         life: 1.4,
         target: target.id,
@@ -131,7 +142,9 @@ export const Battle = () => {
         crit: isCrit,
         pierce: mods.projPierce,
         hits: [],
+        straight: opts.straight,
       });
+      setAttackTick((v) => v + 1);
       playSfx('hero_shoot', 0.72);
     },
     [],
@@ -157,7 +170,6 @@ export const Battle = () => {
           spawnEnemy('brute', true);
           playSfx('boss_spawn');
           s.bossSpawned = true;
-          bossIntroAtRef.current = ts;
           triggerShake(36);
         }
 
@@ -187,12 +199,16 @@ export const Battle = () => {
             .sort((a, b) => a.y - b.y);
           if (sorted.length) {
             s.fireT = 0;
-            const targetCount = Math.min(mods.projPerCast, Math.max(1, sorted.length));
-            // pick the deepest (largest y) targets first
-            const pick = sorted.slice(-targetCount);
-            for (let i = 0; i < mods.projPerCast; i++) {
-              const tgt = pick[i % pick.length];
-              if (tgt) fireAt(tgt);
+            // Single target, deepest enemy. Multi-cast spawns parallel straight
+            // bullets offset to the sides (no homing) — center bullet still
+            // homes onto the picked target.
+            const tgt = sorted[sorted.length - 1];
+            const total = mods.projPerCast;
+            const SPACING = 22;
+            // offsets centered around 0: [0], [-22,22], [-22,0,22], ...
+            for (let i = 0; i < total; i++) {
+              const offset = total === 1 ? 0 : (i - (total - 1) / 2) * SPACING;
+              fireAt(tgt, { lateral: offset, straight: offset !== 0 });
             }
           }
         }
@@ -215,34 +231,61 @@ export const Battle = () => {
         }
 
         // projectiles
+        const hitRadius = (e: Enemy) =>
+          e.isBoss ? 56 : e.kind === 'brute' ? 38 : 26;
+        const damageEnemy = (p: typeof s.projectiles[number], e: Enemy) => {
+          const dmg = Math.round(p.dmg * (p.crit ? 2.2 : 1));
+          e.hp -= dmg;
+          e.hitT = 0.1;
+          s.pops.push({
+            id: s.nextPopId++,
+            x: e.x,
+            y: e.y - 22,
+            t: 0,
+            amount: dmg,
+            crit: p.crit,
+          });
+          playSfx(p.crit ? 'hit_crit' : 'hit_normal', p.crit ? 0.95 : 0.72);
+          if (p.crit) triggerShake(4);
+          p.hits.push(e.id);
+          if (e.hp <= 0 && e.dyingT === 0) {
+            e.dyingT = 0.01;
+            handleKill(e);
+          }
+        };
+
         for (const p of s.projectiles) {
           p.x += p.vx * dt;
           p.y += p.vy * dt;
           p.life -= dt;
+
+          if (p.straight) {
+            // Straight bullet: hit any enemy in flight path; pierce keeps flying.
+            for (const e of s.enemies) {
+              if (e.dyingT !== 0) continue;
+              if (p.hits.includes(e.id)) continue;
+              const dxe = e.x - p.x;
+              const dye = e.y - p.y;
+              if (dxe * dxe + dye * dye < hitRadius(e) ** 2) {
+                damageEnemy(p, e);
+                if (p.pierce > 0) {
+                  p.pierce -= 1;
+                } else {
+                  p.life = 0;
+                  break;
+                }
+              }
+            }
+            continue;
+          }
+
           const tgt = s.enemies.find((e) => e.id === p.target && e.dyingT === 0);
           if (tgt) {
             const dx = tgt.x - p.x;
             const dy = tgt.y - p.y;
             const len = Math.hypot(dx, dy) || 1;
-            if (len < 18) {
-              const dmg = Math.round(p.dmg * (p.crit ? 2.2 : 1));
-              tgt.hp -= dmg;
-              tgt.hitT = 0.1;
-              s.pops.push({
-                id: s.nextPopId++,
-                x: tgt.x,
-                y: tgt.y - 22,
-                t: 0,
-                amount: dmg,
-                crit: p.crit,
-              });
-              playSfx(p.crit ? 'hit_crit' : 'hit_normal', p.crit ? 0.95 : 0.72);
-              if (p.crit) triggerShake(4);
-              p.hits.push(tgt.id);
-              if (tgt.hp <= 0 && tgt.dyingT === 0) {
-                tgt.dyingT = 0.01;
-                handleKill(tgt);
-              }
+            if (len < hitRadius(tgt)) {
+              damageEnemy(p, tgt);
               if (p.pierce > 0) {
                 p.pierce -= 1;
                 let bestId = -1;
@@ -323,6 +366,18 @@ export const Battle = () => {
     }
   }, [hp, outcome]);
 
+  // Settle gold to wallet exactly once when the run ends
+  useEffect(() => {
+    if (settledRef.current) return;
+    if (outcome === 'victory') {
+      settledRef.current = true;
+      addGold(gold + 500);
+    } else if (outcome === 'gameover') {
+      settledRef.current = true;
+      addGold(Math.floor(gold * 0.5));
+    }
+  }, [outcome, gold, addGold]);
+
   const handleKill = (e: Enemy) => {
     const mods = modsRef.current;
     const isBoss = !!e.isBoss;
@@ -385,23 +440,6 @@ export const Battle = () => {
   const s = stateRef.current;
   const wave = WAVES[currentWaveIdx];
   const isBossWave = !!wave.isBossWave;
-  const boss = isBossWave && s.bossId != null
-    ? s.enemies.find((e) => e.id === s.bossId)
-    : undefined;
-
-  const bossIntroActive =
-    bossIntroAtRef.current > 0 && performance.now() - bossIntroAtRef.current < 1400;
-
-  // bossPct: in non-boss waves shows wave clear progress (depleting),
-  // in boss wave shows actual boss HP.
-  let bossPct: number;
-  if (isBossWave && boss) {
-    bossPct = Math.max(0, boss.hp / boss.hpMax);
-  } else if (isBossWave) {
-    bossPct = 0; // boss dead
-  } else {
-    bossPct = Math.max(0, 1 - waveKills / wave.killGoal);
-  }
 
   // Bottom bar progress: wave kills as percentage; boss wave shows full bar.
   const expPct = isBossWave ? 100 : Math.min(100, (waveKills / wave.killGoal) * 100);
@@ -424,14 +462,13 @@ export const Battle = () => {
       <img src={`${import.meta.env.BASE_URL}img/arena-bg.png`} alt="" className={styles.bg} />
       <div className={styles.vignette} />
 
-      <TopBar bossPct={bossPct} gold={gold} onPause={togglePause} />
-      <WaveCard wave={currentWaveIdx + 1} waveMax={WAVES.length} kills={kills} />
+      <TopBar gold={gold} onPause={togglePause} />
 
       {s.enemies.map((e) => (
         <EnemyComp key={e.id} e={e} />
       ))}
 
-      <Hero x={HERO_X} y={HERO_Y} hp={hp} hpMax={hpMax} />
+      <Hero x={HERO_X} y={HERO_Y} hp={hp} hpMax={hpMax} attackTick={attackTick} />
 
       {s.projectiles.map((p) => (
         <ProjectileComp key={p.id} p={p} />
@@ -442,11 +479,10 @@ export const Battle = () => {
       ))}
 
       <BottomBar
-        level={level}
+        wave={currentWaveIdx + 1}
+        waveMax={WAVES.length}
         expPct={expPct}
       />
-
-      {bossIntroActive && <BossIntroOverlay />}
 
       {paused && outcome === 'running' && !levelUp && (
         <PauseOverlay onResume={resumeBattle} />
