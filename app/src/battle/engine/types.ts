@@ -52,15 +52,22 @@ export interface Mods {
   attackRange: number;
 }
 
-export const initialMods = (): Mods => ({
+export interface InitialModsSeed {
+  attackRange: number;
+  fireCdMul: number;
+  critBase: number;
+  projSpeed: number;
+}
+
+export const initialMods = (seed: InitialModsSeed): Mods => ({
   projSpeedMul: 1,
-  fireCdMul: 1,
+  fireCdMul: seed.fireCdMul,
   projPerCast: 1,
   projPierce: 0,
-  critBonus: 0,
+  critBonus: seed.critBase,
   hpMaxBonus: 0,
   goldGainMul: 1,
-  attackRange: 515,
+  attackRange: seed.attackRange,
 });
 
 export interface BattleStateRef {

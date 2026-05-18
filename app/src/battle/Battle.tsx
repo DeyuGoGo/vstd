@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSceneStore, SCENE_DIMS } from '../stores/useSceneStore';
 import { usePlayerStore } from '../stores/usePlayerStore';
+import { useToastStore } from '../stores/useToastStore';
+import { CHARACTERS } from '../characters/index';
+import type { CharacterBaseConfig } from '../characters/types';
+import { computeEffectiveBattleStats } from '../characters/statFormulas';
 import {
   createInitialState,
   initialMods,
@@ -8,9 +12,7 @@ import {
   type Mods,
   type Outcome,
 } from './engine/types';
-import { pickThree } from './engine/pickThree';
 import { WAVES, ENEMY_BASE, BOSS_MUL } from './data/waves';
-import type { Blessing } from './data/blessings';
 import { TopBar } from './components/TopBar';
 import { Hero } from './components/Hero';
 import { Enemy as EnemyComp } from './components/Enemy';
@@ -20,7 +22,6 @@ import { BottomBar } from './components/BottomBar';
 import { PauseOverlay } from './components/PauseOverlay';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { VictoryOverlay } from './components/VictoryOverlay';
-import { LevelUpOverlay } from './components/LevelUpOverlay';
 import { playSfx, preloadSfx } from '../audio';
 import rawStyles from './Battle.module.css';
 import { cm } from '../utils/cssModule';
@@ -28,23 +29,87 @@ const styles = cm(rawStyles);
 
 const GAME_W = SCENE_DIMS.battle.w;
 const GAME_H = SCENE_DIMS.battle.h;
-const HERO_X = GAME_W / 2;
-const HERO_Y = GAME_H - 165;
-const HP_MAX_BASE = 3200;
+const LINEUP_ANCHOR_X = GAME_W / 2;
+const LINEUP_ANCHOR_Y = GAME_H - 165;
 
-interface LevelUpState {
-  choices: Blessing[];
-  level: number;
+// Triangle formation: slot 0 front-center, slot 1 back-left, slot 2 back-right.
+const SLOT_OFFSETS: readonly { x: number; y: number }[] = [
+  { x: 0, y: 0 },
+  { x: -52, y: 46 },
+  { x: 52, y: 46 },
+];
+
+interface Combatant {
+  slotIdx: number;
+  charId: string;
+  base: CharacterBaseConfig;
+  pos: { x: number; y: number };
+  hp: number;
+  hpMax: number;
+  mods: Mods;
+  fireT: number;
+  dead: boolean;
+  attackTick: number;
+  dmgMin: number;
+  dmgMax: number;
+  projSpeed: number;
+  projSpeedCap: number;
+  fireCdBase: number;
 }
+
+const buildCombatants = (lineup: (string | null)[]): Combatant[] => {
+  const out: Combatant[] = [];
+  for (let i = 0; i < lineup.length; i++) {
+    const id = lineup[i];
+    if (!id) continue;
+    const base = CHARACTERS[id as keyof typeof CHARACTERS];
+    if (!base) continue;
+    const progress = usePlayerStore.getState().characters[id];
+    if (!progress) continue;
+    const eff = computeEffectiveBattleStats(base.baseStats, progress.stats);
+    const offset = SLOT_OFFSETS[i] ?? SLOT_OFFSETS[0];
+    out.push({
+      slotIdx: i,
+      charId: id,
+      base,
+      pos: { x: LINEUP_ANCHOR_X + offset.x, y: LINEUP_ANCHOR_Y + offset.y },
+      hp: eff.hpMax,
+      hpMax: eff.hpMax,
+      mods: initialMods({
+        attackRange: eff.attackRange,
+        fireCdMul: eff.fireCdMul,
+        critBase: eff.critBase,
+        projSpeed: eff.projSpeed,
+      }),
+      fireT: 0,
+      dead: false,
+      attackTick: 0,
+      dmgMin: eff.dmgMin,
+      dmgMax: eff.dmgMax,
+      projSpeed: eff.projSpeed,
+      projSpeedCap: eff.projSpeedCap,
+      fireCdBase: base.baseStats.fireCdBase,
+    });
+  }
+  return out;
+};
 
 export const Battle = () => {
   const setScene = useSceneStore((s) => s.setScene);
   const addGold = usePlayerStore((s) => s.addGold);
+  const lineup = usePlayerStore((s) => s.lineup);
+  const showToast = useToastStore((s) => s.showToast);
+
   const settledRef = useRef(false);
   const stateRef = useRef(createInitialState());
-  const modsRef = useRef<Mods>(initialMods());
+  const combatantsRef = useRef<Combatant[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
   const shakeAmpRef = useRef(0);
+
+  // Initialize combatants once on mount from current lineup snapshot.
+  if (combatantsRef.current.length === 0) {
+    combatantsRef.current = buildCombatants(lineup);
+  }
 
   const triggerShake = useCallback((amp: number) => {
     if (amp > shakeAmpRef.current) shakeAmpRef.current = amp;
@@ -54,25 +119,26 @@ export const Battle = () => {
   const force = useCallback(() => forceTick((v) => v + 1), []);
 
   const [paused, setPaused] = useState(false);
-  const [hp, setHp] = useState(HP_MAX_BASE);
   const [gold, setGold] = useState(0);
   const [kills, setKills] = useState(0);
-  const [level, setLevel] = useState(1);
-  const [levelUp, setLevelUp] = useState<LevelUpState | null>(null);
-  const [rerolls, setRerolls] = useState(2);
   const [currentWaveIdx, setCurrentWaveIdx] = useState(0);
   const [waveKills, setWaveKills] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>('running');
-  const [attackTick, setAttackTick] = useState(0);
-
-  // Mirror level into a ref so handleKill (called from rAF loop) reads fresh value
-  const levelRef = useRef(level);
-  useEffect(() => {
-    levelRef.current = level;
-  }, [level]);
 
   useEffect(() => {
     preloadSfx();
+  }, []);
+
+  // Last-line guard: empty lineup → toast + back to lobby. Defer via microtask
+  // so we don't trigger Toast setState during Battle's mount render path.
+  useEffect(() => {
+    if (combatantsRef.current.length === 0) {
+      queueMicrotask(() => {
+        showToast('請先編隊');
+        setScene('lobby');
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── helpers ──────────────────────────────────────────
@@ -100,7 +166,6 @@ export const Battle = () => {
         dyingT: 0,
       };
       if (isBoss) {
-        // center boss horizontally and just above visible area
         enemy.x = GAME_W / 2;
         enemy.y = 80;
         s.bossId = enemy.id;
@@ -112,39 +177,42 @@ export const Battle = () => {
 
   const fireAt = useCallback(
     (
+      c: Combatant,
       target: Enemy,
-      opts: { speed?: number; dmg?: number; lateral?: number; straight?: boolean } = {},
+      opts: { lateral?: number; straight?: boolean } = {},
     ) => {
-      const mods = modsRef.current;
       const s = stateRef.current;
-      const dx = target.x - HERO_X;
-      const dy = target.y - (HERO_Y - 30);
+      const originX = c.pos.x;
+      const originY = c.pos.y - 30;
+      const dx = target.x - originX;
+      const dy = target.y - originY;
       const len = Math.hypot(dx, dy) || 1;
-      const speed = (opts.speed ?? 380) * mods.projSpeedMul;
-      const isCrit = Math.random() < 0.18 + mods.critBonus;
+      const speed = c.projSpeed * c.mods.projSpeedMul;
+      const isCrit = Math.random() < c.mods.critBonus;
       const nx = dx / len;
       const ny = dy / len;
-      // perpendicular unit (left side); offset the spawn for side bullets
       const lateral = opts.lateral ?? 0;
       const px = -ny;
       const py = nx;
       const jitter = lateral === 0 ? (Math.random() - 0.5) * 20 : 0;
+      const dmgSpan = Math.max(0, c.dmgMax - c.dmgMin);
+      const dmg = c.dmgMin + Math.random() * dmgSpan;
       s.projectiles.push({
         id: s.nextProjId++,
-        x: HERO_X + px * lateral + jitter,
-        y: HERO_Y - 30 + py * lateral,
+        x: originX + px * lateral + jitter,
+        y: originY + py * lateral,
         vx: nx * speed,
         vy: ny * speed,
         rot: Math.atan2(dy, dx) + Math.PI / 2,
         life: 1.4,
         target: target.id,
-        dmg: opts.dmg ?? 60 + Math.random() * 40,
+        dmg,
         crit: isCrit,
-        pierce: mods.projPierce,
+        pierce: c.mods.projPierce,
         hits: [],
         straight: opts.straight,
       });
-      setAttackTick((v) => v + 1);
+      c.attackTick += 1;
       playSfx('hero_shoot', 0.72);
     },
     [],
@@ -155,14 +223,14 @@ export const Battle = () => {
     let raf = 0;
     const loop = (ts: number) => {
       const s = stateRef.current;
-      const mods = modsRef.current;
       const dt = Math.min(0.05, (ts - (s.lastTs || ts)) / 1000);
       s.lastTs = ts;
 
       const wave = WAVES[currentWaveIdx];
       const isBossWave = !!wave.isBossWave;
+      const combatants = combatantsRef.current;
 
-      const running = !paused && !levelUp && outcome === 'running';
+      const running = !paused && outcome === 'running';
 
       if (running) {
         // boss spawn (once on wave 20 entry)
@@ -188,32 +256,39 @@ export const Battle = () => {
           }
         }
 
-        // auto-attack — only target enemies that have descended into the
-        // hero's attack range (forward Y distance from hero).
-        s.fireT += dt;
-        const fireThreshold = 0.42 * mods.fireCdMul;
-        const rangeYMin = HERO_Y - mods.attackRange;
-        if (s.fireT > fireThreshold) {
-          const sorted = s.enemies
-            .filter((e) => e.dyingT === 0 && e.y > rangeYMin)
-            .sort((a, b) => a.y - b.y);
-          if (sorted.length) {
-            s.fireT = 0;
-            // Single target, deepest enemy. Multi-cast spawns parallel straight
-            // bullets offset to the sides (no homing) — center bullet still
-            // homes onto the picked target.
-            const tgt = sorted[sorted.length - 1];
-            const total = mods.projPerCast;
-            const SPACING = 22;
-            // offsets centered around 0: [0], [-22,22], [-22,0,22], ...
-            for (let i = 0; i < total; i++) {
-              const offset = total === 1 ? 0 : (i - (total - 1) / 2) * SPACING;
-              fireAt(tgt, { lateral: offset, straight: offset !== 0 });
+        // per-combatant auto-attack: each living hero finds its own nearest
+        // in-range enemy, ticks its own cooldown, and fires from its position.
+        for (const c of combatants) {
+          if (c.dead) continue;
+          c.fireT += dt;
+          const fireThreshold = c.fireCdBase * c.mods.fireCdMul;
+          if (c.fireT < fireThreshold) continue;
+          const rangeYMin = c.pos.y - c.mods.attackRange;
+          let bestTgt: Enemy | null = null;
+          let bestDist = Infinity;
+          for (const e of s.enemies) {
+            if (e.dyingT !== 0) continue;
+            if (e.y < rangeYMin) continue;
+            const ex = e.x - c.pos.x;
+            const ey = e.y - c.pos.y;
+            const d = ex * ex + ey * ey;
+            if (d < bestDist) {
+              bestDist = d;
+              bestTgt = e;
             }
+          }
+          if (!bestTgt) continue;
+          c.fireT = 0;
+          const total = c.mods.projPerCast;
+          const SPACING = 22;
+          for (let i = 0; i < total; i++) {
+            const offset = total === 1 ? 0 : (i - (total - 1) / 2) * SPACING;
+            fireAt(c, bestTgt, { lateral: offset, straight: offset !== 0 });
           }
         }
 
-        // move enemies
+        // move enemies — collision with heroes drains nearest living combatant.
+        const heroCollisionY = LINEUP_ANCHOR_Y - 60;
         for (const e of s.enemies) {
           if (e.dyingT > 0) {
             e.dyingT = Math.min(1, e.dyingT + dt * 4);
@@ -221,9 +296,25 @@ export const Battle = () => {
           }
           e.y += e.vy * dt;
           if (e.hitT > 0) e.hitT -= dt;
-          if (e.y > HERO_Y - 60) {
+          if (e.y > heroCollisionY) {
+            // Find nearest living combatant by horizontal distance.
+            let nearest: Combatant | null = null;
+            let nearestDist = Infinity;
+            for (const c of combatants) {
+              if (c.dead) continue;
+              const d = Math.abs(c.pos.x - e.x);
+              if (d < nearestDist) {
+                nearestDist = d;
+                nearest = c;
+              }
+            }
             const dmg = e.kind === 'brute' ? (e.isBoss ? 80 : 40) : 12;
-            setHp((h) => Math.max(0, h - dmg));
+            if (nearest) {
+              nearest.hp = Math.max(0, nearest.hp - dmg);
+              if (nearest.hp <= 0 && !nearest.dead) {
+                nearest.dead = true;
+              }
+            }
             triggerShake(e.isBoss ? 22 : e.kind === 'brute' ? 14 : 8);
             playSfx('hero_take_dmg');
             e.dyingT = 0.01;
@@ -254,13 +345,17 @@ export const Battle = () => {
           }
         };
 
+        // For homing projectiles we still apply a generic speed cap. Use the
+        // highest combatant cap so any of them stays within their own bound.
+        const homingSpeedCap =
+          combatants.reduce((m, c) => Math.max(m, c.projSpeedCap), 0) || 460;
+
         for (const p of s.projectiles) {
           p.x += p.vx * dt;
           p.y += p.vy * dt;
           p.life -= dt;
 
           if (p.straight) {
-            // Straight bullet: hit any enemy in flight path; pierce keeps flying.
             for (const e of s.enemies) {
               if (e.dyingT !== 0) continue;
               if (p.hits.includes(e.id)) continue;
@@ -313,10 +408,9 @@ export const Battle = () => {
               p.vx += ((dx / len) * 200) * dt;
               p.vy += ((dy / len) * 200) * dt;
               const sp = Math.hypot(p.vx, p.vy);
-              const max = 460 * mods.projSpeedMul;
-              if (sp > max) {
-                p.vx *= max / sp;
-                p.vy *= max / sp;
+              if (sp > homingSpeedCap) {
+                p.vx *= homingSpeedCap / sp;
+                p.vy *= homingSpeedCap / sp;
               }
               p.rot = Math.atan2(p.vy, p.vx) + Math.PI / 2;
             }
@@ -332,9 +426,15 @@ export const Battle = () => {
           (p) => p.life > 0 && p.y > -50 && p.y < GAME_H + 50 && p.x > -50 && p.x < GAME_W + 50,
         );
         s.pops = s.pops.filter((d) => d.t < 1);
+
+        // wipe → gameover when every combatant has fallen.
+        if (combatants.length > 0 && combatants.every((c) => c.dead) && outcome === 'running') {
+          playSfx('game_over');
+          setOutcome('gameover');
+        }
       }
 
-      // shake decay (runs regardless of pause so existing shake settles)
+      // shake decay
       const wrap = wrapRef.current;
       if (wrap) {
         if (shakeAmpRef.current > 0.2) {
@@ -356,17 +456,9 @@ export const Battle = () => {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paused, levelUp, outcome, currentWaveIdx, fireAt, spawnEnemy, force]);
+  }, [paused, outcome, currentWaveIdx, fireAt, spawnEnemy, force]);
 
-  // GameOver guard — react to hp drop
-  useEffect(() => {
-    if (hp <= 0 && outcome === 'running') {
-      playSfx('game_over');
-      setOutcome('gameover');
-    }
-  }, [hp, outcome]);
-
-  // Settle gold to wallet exactly once when the run ends
+  // Settle gold to wallet exactly once when the run ends.
   useEffect(() => {
     if (settledRef.current) return;
     if (outcome === 'victory') {
@@ -379,13 +471,16 @@ export const Battle = () => {
   }, [outcome, gold, addGold]);
 
   const handleKill = (e: Enemy) => {
-    const mods = modsRef.current;
     const isBoss = !!e.isBoss;
+    // Use the first living combatant's goldGainMul as the multiplier source.
+    // (All combatants currently share goldGainMul=1; future per-char mods can
+    // refine this without changing the kill plumbing.)
+    const goldMul =
+      combatantsRef.current.find((c) => !c.dead)?.mods.goldGainMul ?? 1;
 
-    // Boss kill → victory
     if (isBoss) {
       setKills((k) => k + 1);
-      setGold((g) => g + Math.round(200 * mods.goldGainMul));
+      setGold((g) => g + Math.round(200 * goldMul));
       playSfx('victory');
       setOutcome('victory');
       return;
@@ -393,57 +488,28 @@ export const Battle = () => {
 
     setKills((k) => k + 1);
     const baseGold = e.kind === 'brute' ? 25 : 6;
-    setGold((g) => g + Math.round(baseGold * mods.goldGainMul));
+    setGold((g) => g + Math.round(baseGold * goldMul));
 
-    // wave progress — clearing the wave's effective kill goal opens the level-up modal.
-    // Wave does NOT advance here; it advances when the player picks a blessing.
     setWaveKills((wk) => {
       const next = wk + 1;
       const wave = WAVES[currentWaveIdx];
       if (wave.isBossWave) return next;
       if (wk < wave.killGoal && next >= wave.killGoal) {
-        setLevelUp((cur) => {
-          if (cur) return cur;
-          playSfx('wave_clear');
-          window.setTimeout(() => playSfx('level_up'), 120);
-          return { choices: pickThree(), level: levelRef.current + 1 };
-        });
+        playSfx('wave_clear');
+        setCurrentWaveIdx((idx) => Math.min(idx + 1, WAVES.length - 1));
+        stateRef.current.spawnT = 0;
+        return 0;
       }
       return next;
     });
-  };
-
-  // ── blessing apply ───────────────────────────────────
-  const applyBlessing = (b: Blessing) => {
-    playSfx('ui_card_pick');
-    const mods = modsRef.current;
-    b.apply(mods, {
-      healHp: (n) => {
-        setHp((h) => Math.min(h + n, HP_MAX_BASE + mods.hpMaxBonus));
-      },
-    });
-    setLevel((l) => l + 1);
-    setCurrentWaveIdx((idx) => Math.min(idx + 1, WAVES.length - 1));
-    setWaveKills(0);
-    stateRef.current.spawnT = 0;
-    setLevelUp(null);
-  };
-
-  const onReroll = () => {
-    if (rerolls <= 0) return;
-    playSfx('ui_reroll');
-    setRerolls((r) => r - 1);
-    setLevelUp((lu) => (lu ? { ...lu, choices: pickThree() } : null));
   };
 
   // ── derived UI values ────────────────────────────────
   const s = stateRef.current;
   const wave = WAVES[currentWaveIdx];
   const isBossWave = !!wave.isBossWave;
-
-  // Bottom bar progress: wave kills as percentage; boss wave shows full bar.
   const expPct = isBossWave ? 100 : Math.min(100, (waveKills / wave.killGoal) * 100);
-  const hpMax = HP_MAX_BASE + modsRef.current.hpMaxBonus;
+
   const togglePause = () => {
     playSfx('ui_pause');
     setPaused((p) => !p);
@@ -468,7 +534,18 @@ export const Battle = () => {
         <EnemyComp key={e.id} e={e} />
       ))}
 
-      <Hero x={HERO_X} y={HERO_Y} hp={hp} hpMax={hpMax} attackTick={attackTick} />
+      {combatantsRef.current.map((c) => (
+        <Hero
+          key={c.slotIdx}
+          x={c.pos.x}
+          y={c.pos.y}
+          hp={c.hp}
+          hpMax={c.hpMax}
+          attackTick={c.attackTick}
+          assets={c.base.assets}
+          dead={c.dead}
+        />
+      ))}
 
       {s.projectiles.map((p) => (
         <ProjectileComp key={p.id} p={p} />
@@ -484,18 +561,8 @@ export const Battle = () => {
         expPct={expPct}
       />
 
-      {paused && outcome === 'running' && !levelUp && (
+      {paused && outcome === 'running' && (
         <PauseOverlay onResume={resumeBattle} />
-      )}
-
-      {levelUp && outcome === 'running' && (
-        <LevelUpOverlay
-          choices={levelUp.choices}
-          level={levelUp.level}
-          rerolls={rerolls}
-          onPick={applyBlessing}
-          onReroll={onReroll}
-        />
       )}
 
       {outcome === 'gameover' && (

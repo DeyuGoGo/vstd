@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Heart } from '../icons';
 import { Z } from '../zIndex';
+import type { CharacterAssets } from '../../characters/types';
 
 const PANEL_STROKE = 'rgba(180, 140, 255, 0.35)';
 
@@ -10,21 +11,30 @@ interface Props {
   hp: number;
   hpMax: number;
   attackTick: number;
+  assets: CharacterAssets;
+  dead?: boolean;
 }
 
-export const Hero = ({ x, y, hp, hpMax, attackTick }: Props) => {
+export const Hero = ({ x, y, hp, hpMax, attackTick, assets, dead }: Props) => {
   const [pose, setPose] = useState<'idle' | 'attack'>('idle');
   const pct = Math.max(0, hp / hpMax);
-  const assetBase = `${import.meta.env.BASE_URL}img/starina/`;
 
   useEffect(() => {
     if (attackTick === 0) return;
+    if (dead) return;
     setPose('attack');
     const timer = window.setTimeout(() => setPose('idle'), 180);
     return () => window.clearTimeout(timer);
-  }, [attackTick]);
+  }, [attackTick, dead]);
 
-  const isAttack = pose === 'attack';
+  const isAttack = pose === 'attack' && !dead;
+  const layout = isAttack ? assets.layout.attack : assets.layout.idle;
+  const baseSrc = `${import.meta.env.BASE_URL}${
+    isAttack ? assets.battleBaseAttack : assets.battleBaseIdle
+  }`;
+  const weaponSrc = `${import.meta.env.BASE_URL}${assets.battleWeapon}`;
+  const headgearSrc = `${import.meta.env.BASE_URL}${assets.battleHeadgear}`;
+  const handSrc = `${import.meta.env.BASE_URL}${assets.battleHandCover}`;
 
   return (
     <div
@@ -37,6 +47,9 @@ export const Hero = ({ x, y, hp, hpMax, attackTick }: Props) => {
         pointerEvents: 'none',
         width: 120,
         height: 135,
+        opacity: dead ? 0.35 : 1,
+        filter: dead ? 'grayscale(1)' : undefined,
+        transition: 'opacity 200ms ease-out, filter 200ms ease-out',
       }}
     >
       <div
@@ -84,7 +97,7 @@ export const Hero = ({ x, y, hp, hpMax, attackTick }: Props) => {
               textShadow: '0 1px 2px rgba(0,0,0,0.8)',
             }}
           >
-            {hp.toLocaleString()}
+            {Math.max(0, Math.round(hp)).toLocaleString()}
           </span>
         </div>
       </div>
@@ -104,12 +117,12 @@ export const Hero = ({ x, y, hp, hpMax, attackTick }: Props) => {
       />
 
       <img
-        src={`${assetBase}${isAttack ? 'base_attack.png' : 'base_idle.png'}`}
+        src={baseSrc}
         alt=""
         style={{
           position: 'absolute',
-          left: isAttack ? 26 : 24,
-          top: isAttack ? 14 : 15,
+          left: layout.base[0],
+          top: layout.base[1],
           width: 61,
           height: 'auto',
           display: 'block',
@@ -120,13 +133,13 @@ export const Hero = ({ x, y, hp, hpMax, attackTick }: Props) => {
       />
 
       <img
-        src={`${assetBase}weapon_stardust_staff.png`}
+        src={weaponSrc}
         alt=""
         style={{
           position: 'absolute',
-          left: isAttack ? 38 : 30,
-          top: isAttack ? 6 : 11,
-          width: isAttack ? 61 : 57,
+          left: layout.weapon[0],
+          top: layout.weapon[1],
+          width: layout.weapon[2],
           height: 'auto',
           display: 'block',
           filter: 'drop-shadow(0 0 8px rgba(179, 136, 255, 0.7))',
@@ -136,12 +149,12 @@ export const Hero = ({ x, y, hp, hpMax, attackTick }: Props) => {
       />
 
       <img
-        src={`${assetBase}headgear_star_crown.png`}
+        src={headgearSrc}
         alt=""
         style={{
           position: 'absolute',
-          left: isAttack ? 43 : 40,
-          top: isAttack ? 7 : 8,
+          left: layout.headgear[0],
+          top: layout.headgear[1],
           width: 34,
           height: 'auto',
           display: 'block',
@@ -152,12 +165,12 @@ export const Hero = ({ x, y, hp, hpMax, attackTick }: Props) => {
       />
 
       <img
-        src={`${assetBase}hand_cover.png`}
+        src={handSrc}
         alt=""
         style={{
           position: 'absolute',
-          left: isAttack ? 53 : 46,
-          top: isAttack ? 52 : 58,
+          left: layout.hand[0],
+          top: layout.hand[1],
           width: 19,
           height: 'auto',
           display: 'block',
