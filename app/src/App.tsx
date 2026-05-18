@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { Lobby } from './lobby/Lobby';
 import { Battle } from './battle/Battle';
+import { Roster } from './roster/Roster';
+import { CharacterDetail } from './character/CharacterDetail';
 import { Toast } from './components/Toast';
 import { useSceneStore, SCENE_DIMS } from './stores/useSceneStore';
 import './styles/stage.css';
@@ -33,6 +35,8 @@ export const App = () => {
       <div className="stage-inner">
         {scene === 'lobby' && <Lobby />}
         {scene === 'battle' && <Battle />}
+        {scene === 'roster' && <Roster />}
+        {scene === 'character' && <CharacterDetail />}
         <Toast />
       </div>
     </div>

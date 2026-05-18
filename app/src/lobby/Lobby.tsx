@@ -1,6 +1,7 @@
 import { usePlayerStore, BATTLE_STAMINA_COST } from '../stores/usePlayerStore';
 import { useToastStore } from '../stores/useToastStore';
 import { useSceneStore } from '../stores/useSceneStore';
+import { CHARACTERS, DEFAULT_CHARACTER_ID, type CharacterId } from '../characters/index';
 import { ResourcePill } from '../components/ResourcePill';
 import { MenuItem } from '../components/MenuItem';
 import { SideShortcut } from '../components/SideShortcut';
@@ -36,14 +37,25 @@ export const Lobby = () => {
   const mail = usePlayerStore((s) => s.mail);
   const adventureBadge = usePlayerStore((s) => s.notifications.adventure);
   const activeTab = usePlayerStore((s) => s.nav.activeTab);
+  const lineup = usePlayerStore((s) => s.lineup);
+  const selectedCharacterId = usePlayerStore((s) => s.selectedCharacterId);
   const clearMail = usePlayerStore((s) => s.clearMail);
   const setActiveTab = usePlayerStore((s) => s.setActiveTab);
   const spendStamina = usePlayerStore((s) => s.spendStamina);
   const showToast = useToastStore((s) => s.showToast);
   const setScene = useSceneStore((s) => s.setScene);
 
+  // Lobby display character: first non-null lineup slot, fallback to selected, then default.
+  const firstLineupId = lineup.find((id): id is string => id !== null) ?? null;
+  const displayCharId = (firstLineupId ?? selectedCharacterId ?? DEFAULT_CHARACTER_ID) as CharacterId;
+  const displayChar = CHARACTERS[displayCharId] ?? CHARACTERS[DEFAULT_CHARACTER_ID as CharacterId];
+
   const comingSoon = () => showToast('即將推出');
   const enterBattle = () => {
+    if (lineup.every((id) => id === null)) {
+      showToast('請先編隊');
+      return;
+    }
     if (!spendStamina(BATTLE_STAMINA_COST)) {
       showToast(`體力不足（需 ${BATTLE_STAMINA_COST}）`);
       return;
@@ -57,8 +69,9 @@ export const Lobby = () => {
     <div className={styles.lobby}>
       <div className={styles.lobbyScene} aria-hidden="true">
         <video
+          key={displayChar.assets.lobbyVideo}
           className={styles.lobbyVideo}
-          src={`${baseUrl}video/lobby-idle.mp4`}
+          src={`${baseUrl}${displayChar.assets.lobbyVideo}`}
           autoPlay
           loop
           muted
@@ -84,7 +97,7 @@ export const Lobby = () => {
         <div className={styles.avatar}>
           <div
             className={styles.avatarImg}
-            style={{ backgroundImage: `url(${baseUrl}img/starina/avatar.png)` }}
+            style={{ backgroundImage: `url(${baseUrl}${displayChar.assets.lobbyAvatar})` }}
           />
           <div className={styles.avatarFrame} />
           <div className={styles.avatarLv}>{player.level}</div>
@@ -175,7 +188,10 @@ export const Lobby = () => {
             zh="星城"
             en="STARFIELD"
             active={activeTab === 'starfield'}
-            onClick={comingSoon}
+            onClick={() => {
+              setActiveTab('starfield');
+              setScene('roster');
+            }}
           />
           <NavItem
             Icon={NavIconGuild}
