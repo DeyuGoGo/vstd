@@ -14,7 +14,7 @@
 
 | 編號 | 主題 | 用途 |
 |------|------|------|
-| 008 | 大廳角色 Live Rig | 眼動 + 眨眼 + 手臂分件（5 張 PNG，含覆蓋現有 core） |
+| 009 | 劍士（swordsman）全套素材 | 第二隻角色 — 5 張戰鬥 sprite + avatar + lobby video。詳見 [009_swordsman/SPEC.md](009_swordsman/SPEC.md) |
 
 ## 命名規約
 
