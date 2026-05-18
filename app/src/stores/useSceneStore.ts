@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type Scene = 'lobby' | 'battle';
+export type Scene = 'lobby' | 'battle' | 'roster' | 'character';
 
 export interface SceneDims {
   w: number;
@@ -10,6 +10,8 @@ export interface SceneDims {
 export const SCENE_DIMS: Record<Scene, SceneDims> = {
   lobby: { w: 640, h: 960 },
   battle: { w: 640, h: 960 },
+  roster: { w: 640, h: 960 },
+  character: { w: 640, h: 960 },
 };
 
 interface SceneState {

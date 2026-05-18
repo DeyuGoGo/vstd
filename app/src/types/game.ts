@@ -12,6 +12,7 @@ export interface Wallet {
   staminaMax: number;
   gold: number;
   gem: number;
+  expItem: number;
 }
 
 export interface Mail {
