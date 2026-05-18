@@ -30,31 +30,6 @@ const styles = cm(rawStyles);
 
 const numberFmt = new Intl.NumberFormat('en-US');
 
-const lobbyStarinaLayers = [
-  ['back-hair.png', 'rigBackHair'],
-  ['objects.png', 'rigObjects'],
-  ['headwear.png', 'rigHeadwear'],
-  ['bottomwear.png', 'rigBottomwear'],
-  ['handwear-left.png', 'rigHandwearLeft'],
-  ['legwear.png', 'rigLegwear'],
-  ['footwear.png', 'rigFootwear'],
-  ['topwear.png', 'rigTopwear'],
-  ['handwear-right.png', 'rigHandwearRight'],
-  ['neck.png', 'rigNeck'],
-  ['eyebrow.png', 'rigEyebrow'],
-  ['ears.png', 'rigEars'],
-  ['face.png', 'rigFace'],
-  ['mouth.png', 'rigMouth'],
-  ['earwear.png', 'rigEarwear'],
-  ['nose.png', 'rigNose'],
-] as const;
-
-const lobbyStarinaEyeLayers = [
-  ['eyelash.png', 'rigEyelash'],
-  ['eyewhite.png', 'rigEyewhite'],
-  ['irides.png', 'rigIrides'],
-] as const;
-
 export const Lobby = () => {
   const player = usePlayerStore((s) => s.player);
   const wallet = usePlayerStore((s) => s.wallet);
@@ -77,65 +52,18 @@ export const Lobby = () => {
   };
   const xpPct = Math.min(100, Math.max(0, (player.xp / player.xpMax) * 100));
   const baseUrl = import.meta.env.BASE_URL;
-  const lobbyStarinaPath = `${baseUrl}img/lobby-starina-cutout/`;
 
   return (
     <div className={styles.lobby}>
       <div className={styles.lobbyScene} aria-hidden="true">
-        <div
-          className={styles.lobbyBg}
-          style={{ backgroundImage: `url(${baseUrl}img/lobby-bg-plate.png)` }}
+        <video
+          className={styles.lobbyVideo}
+          src={`${baseUrl}video/lobby-idle.mp4`}
+          autoPlay
+          loop
+          muted
+          playsInline
         />
-        <div className={styles.lobbySceneMotion}>
-          <img
-            className={`${styles.sceneFx} ${styles.moonGlow}`}
-            src={`${baseUrl}img/lobby-moon-glow.png`}
-            alt=""
-          />
-          <img
-            className={`${styles.sceneFx} ${styles.warmLights}`}
-            src={`${baseUrl}img/lobby-warm-lights.png`}
-            alt=""
-          />
-          <div className={styles.lobbyRig}>
-            {lobbyStarinaLayers.map(([file, className]) => (
-              <img
-                key={file}
-                className={`${styles.spriteLayer} ${styles[className]}`}
-                src={`${lobbyStarinaPath}${file}`}
-                alt=""
-              />
-            ))}
-            <div className={styles.rigEyesGroupFloat}>
-              <div className={styles.rigEyesGroupBlinkLeft}>
-                {lobbyStarinaEyeLayers.map(([file, className]) => (
-                  <img
-                    key={`L-${file}`}
-                    className={`${styles.spriteLayer} ${styles[className]}`}
-                    src={`${lobbyStarinaPath}${file}`}
-                    alt=""
-                  />
-                ))}
-              </div>
-              <div className={styles.rigEyesGroupBlinkRight}>
-                {lobbyStarinaEyeLayers.map(([file, className]) => (
-                  <img
-                    key={`R-${file}`}
-                    className={`${styles.spriteLayer} ${styles[className]}`}
-                    src={`${lobbyStarinaPath}${file}`}
-                    alt=""
-                  />
-                ))}
-              </div>
-            </div>
-            <img
-              className={`${styles.spriteLayer} ${styles.rigFrontHair}`}
-              src={`${lobbyStarinaPath}front-hair.png`}
-              alt=""
-            />
-          </div>
-          <div className={styles.cgBreathGlow} />
-        </div>
         <div className={styles.cgEffects}>
           <span />
           <span />
