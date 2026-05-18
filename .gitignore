@@ -46,3 +46,8 @@ Thumbs.db
 # TypeScript build cache
 *.tsbuildinfo
 next-env.d.ts
+
+# Workflow scratch
+nowTask/
+res_for_use/
+.claude/scheduled_tasks.lock
