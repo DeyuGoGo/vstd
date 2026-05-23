@@ -35,7 +35,7 @@ export const swordsman: CharacterBaseConfig = {
     battleHeadgear: 'img/swordsman/headgear_circlet.png',
     battleHandCover: 'img/swordsman/hand_cover.png',
     lobbyAvatar: 'img/swordsman/avatar.png',
-    lobbyVideo: 'video/swordsman-idle.mp4',
+    lobbyVideo: 'video/lobby-idle.mp4',
     layout: {
       // 暫沿用星奈的座標 — 素材到位後實機微調
       idle: {
