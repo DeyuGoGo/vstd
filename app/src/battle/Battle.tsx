@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSceneStore, SCENE_DIMS } from '../stores/useSceneStore';
 import { usePlayerStore } from '../stores/usePlayerStore';
@@ -217,6 +218,40 @@ export const Battle = () => {
     },
     [],
   );
+
+  const handleKill = useCallback((e: Enemy) => {
+    const isBoss = !!e.isBoss;
+    // Use the first living combatant's goldGainMul as the multiplier source.
+    // (All combatants currently share goldGainMul=1; future per-char mods can
+    // refine this without changing the kill plumbing.)
+    const goldMul =
+      combatantsRef.current.find((c) => !c.dead)?.mods.goldGainMul ?? 1;
+
+    if (isBoss) {
+      setKills((k) => k + 1);
+      setGold((g) => g + Math.round(200 * goldMul));
+      playSfx('victory');
+      setOutcome('victory');
+      return;
+    }
+
+    setKills((k) => k + 1);
+    const baseGold = e.kind === 'brute' ? 25 : 6;
+    setGold((g) => g + Math.round(baseGold * goldMul));
+
+    setWaveKills((wk) => {
+      const next = wk + 1;
+      const wave = WAVES[currentWaveIdx];
+      if (wave.isBossWave) return next;
+      if (wk < wave.killGoal && next >= wave.killGoal) {
+        playSfx('wave_clear');
+        setCurrentWaveIdx((idx) => Math.min(idx + 1, WAVES.length - 1));
+        stateRef.current.spawnT = 0;
+        return 0;
+      }
+      return next;
+    });
+  }, [currentWaveIdx]);
 
   // ── game loop ────────────────────────────────────────
   useEffect(() => {
@@ -456,7 +491,7 @@ export const Battle = () => {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paused, outcome, currentWaveIdx, fireAt, spawnEnemy, force]);
+  }, [paused, outcome, currentWaveIdx, fireAt, spawnEnemy, handleKill, force]);
 
   // Settle gold to wallet exactly once when the run ends.
   useEffect(() => {
@@ -469,40 +504,6 @@ export const Battle = () => {
       addGold(Math.floor(gold * 0.5));
     }
   }, [outcome, gold, addGold]);
-
-  const handleKill = (e: Enemy) => {
-    const isBoss = !!e.isBoss;
-    // Use the first living combatant's goldGainMul as the multiplier source.
-    // (All combatants currently share goldGainMul=1; future per-char mods can
-    // refine this without changing the kill plumbing.)
-    const goldMul =
-      combatantsRef.current.find((c) => !c.dead)?.mods.goldGainMul ?? 1;
-
-    if (isBoss) {
-      setKills((k) => k + 1);
-      setGold((g) => g + Math.round(200 * goldMul));
-      playSfx('victory');
-      setOutcome('victory');
-      return;
-    }
-
-    setKills((k) => k + 1);
-    const baseGold = e.kind === 'brute' ? 25 : 6;
-    setGold((g) => g + Math.round(baseGold * goldMul));
-
-    setWaveKills((wk) => {
-      const next = wk + 1;
-      const wave = WAVES[currentWaveIdx];
-      if (wave.isBossWave) return next;
-      if (wk < wave.killGoal && next >= wave.killGoal) {
-        playSfx('wave_clear');
-        setCurrentWaveIdx((idx) => Math.min(idx + 1, WAVES.length - 1));
-        stateRef.current.spawnT = 0;
-        return 0;
-      }
-      return next;
-    });
-  };
 
   // ── derived UI values ────────────────────────────────
   const s = stateRef.current;

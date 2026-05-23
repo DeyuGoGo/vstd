@@ -11,6 +11,7 @@ export const Toast = () => {
   const [visible, setVisible] = useState(false);
   const [renderedMessage, setRenderedMessage] = useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!message) {
       setVisible(false);
@@ -24,6 +25,7 @@ export const Toast = () => {
     }, 2000);
     return () => clearTimeout(timer);
   }, [id, message, dismiss]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!renderedMessage) return null;
   return (

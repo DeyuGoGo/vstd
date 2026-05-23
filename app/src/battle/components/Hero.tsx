@@ -22,6 +22,7 @@ export const Hero = ({ x, y, hp, hpMax, attackTick, assets, dead }: Props) => {
   useEffect(() => {
     if (attackTick === 0) return;
     if (dead) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPose('attack');
     const timer = window.setTimeout(() => setPose('idle'), 180);
     return () => window.clearTimeout(timer);

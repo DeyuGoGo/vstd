@@ -30,7 +30,7 @@ export const CharacterDetail = () => {
   const lineup = usePlayerStore((s) => s.lineup);
   const expItem = usePlayerStore((s) => s.wallet.expItem);
   const allocateStat = usePlayerStore((s) => s.allocateStat);
-  const useExpItem = usePlayerStore((s) => s.useExpItem);
+  const consumeExpItem = usePlayerStore((s) => s.useExpItem);
   const setLineupSlot = usePlayerStore((s) => s.setLineupSlot);
   const setScene = useSceneStore((s) => s.setScene);
 
@@ -78,7 +78,7 @@ export const CharacterDetail = () => {
 
   const onUse = (n: number) => {
     if (expItem <= 0) return;
-    useExpItem(selectedId, n);
+    consumeExpItem(selectedId, n);
   };
 
   const onLeave = () => {
