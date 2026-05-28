@@ -1,0 +1,92 @@
+{
+  "id": "T-006-aspd-atk-curves-ro-style",
+  "number": "T-006",
+  "title": "攻速 / 攻擊力公式仿 RO 改非線性 + UI 文案改「攻速」",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-28T17:15:00+08:00",
+  "updatedAt": "2026-05-28T17:35:00+08:00",
+  "mergedAt": "2026-05-28T17:35:00+08:00",
+  "dependencies": ["T-005-default-lv30-with-unspent-points"],
+  "plan": {
+    "goal": "玩家點 AGI / STR 素質點能明顯感受到攻速與攻擊力提升，邊際遞增（不是 +1=+1 線性微增）。AGI 高的角色每秒攻擊次數明顯上升，STR 高的角色傷害放大。CharacterDetail 顯示『攻速 X 次/秒』，丟掉抽象的『冷卻 -X%』文案。",
+    "boundaryConditions": [
+      "只重寫 stat → effective battle stats 公式 + UI 文案；不調 baseStats（hpBase / fireCdBase / dmgMinBase 等不動）",
+      "不引入新 stat（保持 6：str/agi/vit/dex/luk/int）",
+      "不改既有 startingStats（角色定位不變）",
+      "戰鬥彈道機制（projSpeed / 攻擊範圍）此單不動",
+      "暴擊與 HP 公式此單不動（聚焦攻速＋傷害）"
+    ],
+    "preflightChecks": [
+      "勘查 Battle.tsx 怎麼吃 fireCdMul / dmgMin / dmgMax — 確認改 EffectiveBattleStats 介面後接得起來",
+      "勘查 CharacterDetail.tsx 戰鬥能力預覽四格的顯示來源",
+      "確認 RO StrATK 公式 (STR + floor(STR/10)²) 與 AGI ASPD 公式可在 6-stat 預算內模擬",
+      "用 Lv30 滿點情境（87 點全押 AGI / STR）跑公式 sanity check — 不能讓單一角色爆量到無法平衡"
+    ],
+    "expectedDeliverables": [
+      "CharacterDetail 戰鬥能力預覽出現『攻速 X.XX 次/秒』欄位（替代『冷卻 -X%』）",
+      "AGI 0 → 30 之間攻速曲線明顯（每秒攻擊次數從 ~1 上到 ~2+），AGI 30 → 60 邊際更大（非線性）",
+      "STR 0 → 30 傷害區間放大幅度明顯大於『+30 = +30』",
+      "STR 30 → 60 每點 STR 邊際遞增（平方項生效）",
+      "進戰鬥場實際打擊節奏跟著攻速數字變快（不只是 UI 改）",
+      "兩隻角色 Lv30 滿點極端情境（87 點全押）下，攻速 / 傷害皆有上限不會爆，數值合理",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：Battle.tsx 怎麼用 fireCdMul、CharacterDetail 怎麼顯示這 4 個戰鬥預覽欄位", "status": "done" },
+      { "id": "s2", "title": "設計：寫出新的 AGI ASPD 公式（含平方項或對數曲線）+ STR StrATK 公式（仿 RO STR + (STR/10)²），手算 sanity 表", "status": "done" },
+      { "id": "s3", "title": "實作：改 statFormulas 公式 + EffectiveBattleStats 介面 + CharacterDetail UI 文案 + Battle 接新 fireRate", "status": "done" },
+      { "id": "s4", "title": "驗證：CharacterDetail 點 AGI/STR + 號感受曲線；進戰鬥場觀察攻速節奏；極端值 sanity check", "status": "done" }
+    ],
+    "openQuestions": [
+      "[已解 @ 2026-05-28] Q1：auto-mode 拍『X.XX 次/秒』。最直覺、不需要玩家做心算。",
+      "[已解 @ 2026-05-28] Q2：暴擊不動。聚焦攻速 + 攻擊力兩條曲線，避免一次改太多項目。",
+      "[已解 @ 2026-05-28] Q3：fireCdMul 保留為 Battle.tsx 內部介面（不改 Battle 邏輯），新增 attackPerSec 給 UI 用。0 改動到 Battle.tsx 就讓攻速曲線自動套用。"
+    ],
+    "estimatedSize": "M",
+    "riskNotes": [
+      "改 EffectiveBattleStats 介面會牽動 Battle.tsx 多處 — 必須同 commit 改，不能半途留 mismatch",
+      "平方項 + 線性項組合，AGI / STR 高分時可能比預期爆 — sanity check 一定要做",
+      "戰鬥節奏變快可能讓既有 wave 數值（怪物 HP / spawn 間隔）失衡 — 不在此單修，但要記下來作為後續單觸發條件",
+      "攻速從 cd 改 rate 概念，可能需要在 Battle.tsx 把 next fire 時間從 'lastFire + cd' 翻成 '1/rate' 邏輯"
+    ],
+    "referenceFiles": [
+      "app/src/characters/statFormulas.ts",
+      "app/src/character/CharacterDetail.tsx",
+      "app/src/battle/Battle.tsx",
+      "app/src/characters/starina.ts",
+      "app/src/characters/swordsman.ts"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-28T17:15:00+08:00",
+      "type": "note",
+      "msg": "task 開立。User 反饋：攻速跟攻擊力 +1=+1 太無感、UI『冷卻』詞不直觀、要參考 RO 的非線性曲線。要做：(1) 改 stat → effective 公式為非線性（平方項或對數）(2) UI 文案改攻速 (3) Battle 接新介面。"
+    },
+    {
+      "ts": "2026-05-28T17:20:00+08:00",
+      "type": "progress",
+      "msg": "Preflight 完成。發現：(1) Battle.tsx 透過 fireCdMul 控制 fire interval，介面接得乾淨 (2) CharacterDetail.tsx line 75 fmtCooldownReduction 是『冷卻 -X%』那段、label 卻已經是『攻速』(name/value 不一致就是 user 的 exact complaint) (3) EffectiveBattleStats 是介面真理之源。"
+    },
+    {
+      "ts": "2026-05-28T17:25:00+08:00",
+      "type": "decision",
+      "msg": "公式拍板。ASPD：score = agi + dex*0.3、fireCdMul = max(0.4, 1/(1 + score*0.015 + score²*0.0001))。StrAtk：str + floor((str/10)²)。INT 保線性 2x、DEX 攻擊貢獻降為 floor(dex*0.5)（主力轉攻速副屬性 + projSpeed）。極端 sanity：agi 87 cap=0.4（5.95 次/秒 for starina），str 87 = +162 dmg（vs 舊 +87）。"
+    },
+    {
+      "ts": "2026-05-28T17:30:00+08:00",
+      "type": "progress",
+      "msg": "實作完成。statFormulas.ts 重寫 — aspdMultiplier + statDamageBonus 兩個 helper、新增 attackPerSec 到 EffectiveBattleStats、Math.max(0.4, ...) 取代 0.5 cap。CharacterDetail.tsx — fmtCooldownReduction → fmtAttackPerSec（『X.XX 次/秒』）、derivedValue 接 eff.attackPerSec。Battle.tsx 不動，仍用 fireCdMul。Typecheck pass。"
+    },
+    {
+      "ts": "2026-05-28T17:35:00+08:00",
+      "type": "review",
+      "msg": "驗證全綠：(1) UI label/value 一致 — 『攻速 1.86 次/秒』取代『攻速 冷卻 -0.5%』(2) 劍士 default = 1.86 次/秒，公式驗證對齊：score=1.6 → raw=0.9763 → 1/(0.55×0.9763)=1.86 (3) AGI 1→10 攻速 1.86→2.13（+14.5%）(4) AGI 10→17 攻速 2.13→2.35（曲線開始陡，平方項生效）(5) STR 3→20 傷害 96-146→117-167，比舊線性公式（+17）多送 +4（平方項 4²/10²=4）。靠 fireCdMul 內部介面不變，Battle.tsx 0 修改自動套新曲線。close."
+    }
+  ]
+}
