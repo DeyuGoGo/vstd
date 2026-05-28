@@ -52,3 +52,7 @@ nowTask/
 res_for_use/
 .claude/scheduled_tasks.lock
 PushCommit.md
+
+# Local asset stash — files already in git history, this is just a
+# personal scratch folder. Keep untracked.
+app/archive/沒用到的圖/
