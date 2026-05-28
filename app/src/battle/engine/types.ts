@@ -11,6 +11,9 @@ export interface Enemy {
   hpMax: number;
   hitT: number;
   dyingT: number;
+  // TD 防線機制：怪物穿越攻擊線後 attacking=true，停止移動，每 attackInterval 秒對 teamHp 扣血。
+  attacking: boolean;
+  attackT: number;
 }
 
 export interface Projectile {

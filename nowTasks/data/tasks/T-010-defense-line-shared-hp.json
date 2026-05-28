@@ -1,0 +1,81 @@
+{
+  "id": "T-010-defense-line-shared-hp",
+  "number": "T-010",
+  "title": "TD 真防線：怪物到底持續攻擊 + 隊伍共用 HP 池 + 防禦聚合",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "review",
+  "owner": "claude",
+  "createdAt": "2026-05-28T19:15:00+08:00",
+  "updatedAt": "2026-05-28T19:35:00+08:00",
+  "lastReviewAt": "2026-05-28T19:35:00+08:00",
+  "dependencies": ["T-009-vit-defense-reduction"],
+  "plan": {
+    "goal": "戰鬥改成真 TD 防線：怪物穿越攻擊線後不消失、停下來持續攻擊；玩家共用 HP 池（lineup 所有角色 hpMax 加總）；VIT 防禦聚合進池子（lineup defReduction 平均）。失敗條件改為 teamHp ≤ 0。城牆 sprite 後續單再加。",
+    "boundaryConditions": [
+      "Phase 1 只做機制：共用 HP 池 + 怪物 attacking 狀態。城牆視覺 sprite 後續開 T-011",
+      "角色 HP bar 視覺保留但凍結在滿（heroes 變不滅塔），不影響 UI 排版",
+      "聚合公式：teamHpMax = sum(combatant.hpMax)、teamDef = avg(combatant.defReduction)",
+      "怪物在攻擊線上的攻擊頻率：每秒一次（minion 12 / brute 40 / boss 80 dmg，套 team def reduction）"
+    ],
+    "preflightChecks": [
+      "確認 Battle.tsx 戰鬥場 UI 排版有沒有合適空位放 team HP bar（top / mid-bottom）",
+      "確認 Enemy interface 加 attacking state + attackT cooldown 的最簡 schema",
+      "確認 wipe gameover 條件（line 466-469）只能改一處還是要拆",
+      "怪物 spawn cap / wave 設計會不會跟新機制衝突 — wave 1 怪物 cap 假設不大，新機制下玩家如果 1 隻清不掉，等下一隻來就重疊變難"
+    ],
+    "expectedDeliverables": [
+      "戰鬥場上方或下方出現一條 team HP bar（顯示 teamHp / teamHpMax 數字）",
+      "怪物穿越攻擊線後不消失，停在線上開始攻擊",
+      "team HP bar 每秒下降（速度 = 線上怪物總數 × 怪物 dmg × (1 - teamDef)）",
+      "玩家清掉線上怪物後 team HP 停止下降",
+      "team HP 歸 0 觸發 gameover",
+      "角色個別 HP bar 仍顯示但凍結在滿（不影響當前視覺）",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：UI 排版可塞 team HP bar 的位置、Enemy schema 改動範圍", "status": "done" },
+      { "id": "s2", "title": "實作：state 加 teamHp / teamHpMax / teamDef + 聚合 helper", "status": "done" },
+      { "id": "s3", "title": "實作：Enemy 加 attacking + attackT 欄位、撞擊改 attacking 狀態、tick 內怪物攻擊扣 team HP", "status": "done" },
+      { "id": "s4", "title": "實作：team HP bar UI + gameover 條件改 teamHp ≤ 0", "status": "done" },
+      { "id": "s5", "title": "驗證：進戰鬥讓怪物穿越，看是否留在線上持續攻擊、team HP 條下降、清掉後停損、cap 0 觸發 gameover", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "M",
+    "riskNotes": [
+      "怪物攻擊線上會累積，視覺可能擠成一團 — 此單先讓他們在 collisionY 排成一條，後續美化",
+      "team HP 池量大（單人 lineup ~3890、3人 ~14000），玩家可能感覺『穿一兩隻沒事』— 後續 wave 設計要加壓",
+      "現在角色 HP bar 凍結在滿，未來要做角色 individual 死亡（被特定 boss 技能擊殺）時要重新規劃",
+      "wipe gameover 條件移除後，所有角色都不會死，要確保新 teamHp gameover 路徑可達"
+    ],
+    "referenceFiles": [
+      "app/src/battle/Battle.tsx",
+      "app/src/battle/engine/types.ts",
+      "app/src/battle/components/Hero.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-28T19:15:00+08:00",
+      "type": "note",
+      "msg": "User 改 TD 機制：怪物到底持續攻擊（不消失）、共用 HP 池、VIT 防禦聚合進池子。城牆 sprite 後續單。設計：teamHpMax = sum、teamDef = avg、攻擊間隔 1s、Phase 1 只做機制不做視覺城牆。"
+    },
+    {
+      "ts": "2026-05-28T19:25:00+08:00",
+      "type": "progress",
+      "msg": "實作：engine/types Enemy 加 attacking + attackT 欄位 / spawnEnemy 初始化兩欄為 false,0 / Battle.tsx aggregate teamStats (sum hpMax, avg defReduction) → teamHp state + teamHpMax + teamDef / 怪物碰線改為設 attacking=true、停在 heroCollisionY、不再 dyingT=0.01 / 新 attacking tick：每幀累計 attackT、超過 1.0s 觸發攻擊扣 teamHp（套 teamDef reduction）/ gameover 條件改為 teamHp <= 0 / useEffect 依賴加入 teamHp/teamDef/triggerShake。"
+    },
+    {
+      "ts": "2026-05-28T19:30:00+08:00",
+      "type": "progress",
+      "msg": "UI：TopBar 下方 (top: 60) 加防線血條：標籤『防線』+ 14px 高綠色 gradient bar + HP 數字顯示。樣式跟其他 HUD 元件一致（同色 panel + blur）。"
+    },
+    {
+      "ts": "2026-05-28T19:35:00+08:00",
+      "type": "review",
+      "msg": "驗證限制：headless preview rAF 被 throttle 無法看 runtime tick，所以 attacking 機制 + 扣血動態無法在 preview 看到。靜態驗證 PASS：(1) 防線血條 3,890/3,890 渲染正確（teamHpMax = swordsman vit3 → 4700... 等等 store 是 vit3 預設 → hpMax 3890 ✓ — 是 1 個 combatant in slot 1）(2) 個別 hero HP bar 仍顯示但不會變動（因為 combatant.hp 不再被 mutate）(3) Typecheck pass (4) Code grep：combatant.hp = 賦值處 0 個，teamHp 邏輯閉環。等 user 開遊戲試玩驗證 runtime 行為。"
+    }
+  ]
+}

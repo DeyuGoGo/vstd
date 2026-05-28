@@ -127,6 +127,21 @@ export const Battle = () => {
   const [waveKills, setWaveKills] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>('running');
 
+  // ── Team defense pool (TD 防線) ──────────────────────
+  // teamHpMax = sum of all combatants' hpMax；teamDef = avg defReduction（VIT 來源）。
+  // 怪物穿越攻擊線後 attacking=true，每 ENEMY_ATTACK_INTERVAL 秒攻擊一次扣 teamHp。
+  const teamStats = (() => {
+    const combatants = combatantsRef.current;
+    if (combatants.length === 0) return { hpMax: 1, def: 0 };
+    const hpMax = combatants.reduce((sum, c) => sum + c.hpMax, 0);
+    const defSum = combatants.reduce((sum, c) => sum + c.mods.defReduction, 0);
+    const def = defSum / combatants.length;
+    return { hpMax, def };
+  })();
+  const [teamHp, setTeamHp] = useState(teamStats.hpMax);
+  const teamHpMax = teamStats.hpMax;
+  const teamDef = teamStats.def;
+
   useEffect(() => {
     preloadSfx();
   }, []);
@@ -166,6 +181,8 @@ export const Battle = () => {
         hpMax,
         hitT: 0,
         dyingT: 0,
+        attacking: false,
+        attackT: 0,
       };
       if (isBoss) {
         enemy.x = GAME_W / 2;
@@ -323,40 +340,47 @@ export const Battle = () => {
           }
         }
 
-        // move enemies — collision with heroes drains nearest living combatant.
+        // move enemies — on reaching the defense line, they stop and keep attacking
+        // the shared team HP pool (TD 防線 mechanic).
         const heroCollisionY = LINEUP_ANCHOR_Y - 60;
+        const ENEMY_ATTACK_INTERVAL = 1.0;  // seconds between attacks
+        let teamDmgThisTick = 0;
+        let shakeAmpThisTick = 0;
+        let anyAttackingThisTick = false;
         for (const e of s.enemies) {
           if (e.dyingT > 0) {
             e.dyingT = Math.min(1, e.dyingT + dt * 4);
             continue;
           }
-          e.y += e.vy * dt;
           if (e.hitT > 0) e.hitT -= dt;
-          if (e.y > heroCollisionY) {
-            // Find nearest living combatant by horizontal distance.
-            let nearest: Combatant | null = null;
-            let nearestDist = Infinity;
-            for (const c of combatants) {
-              if (c.dead) continue;
-              const d = Math.abs(c.pos.x - e.x);
-              if (d < nearestDist) {
-                nearestDist = d;
-                nearest = c;
-              }
+          if (!e.attacking) {
+            e.y += e.vy * dt;
+            if (e.y > heroCollisionY) {
+              // Lock onto the line and start attacking.
+              e.y = heroCollisionY;
+              e.attacking = true;
+              e.attackT = 0;  // first attack happens after the first interval
             }
-            const rawDmg = e.kind === 'brute' ? (e.isBoss ? 80 : 40) : 12;
-            if (nearest) {
-              const reduced = rawDmg * (1 - nearest.mods.defReduction);
-              const dmg = Math.max(1, Math.round(reduced));
-              nearest.hp = Math.max(0, nearest.hp - dmg);
-              if (nearest.hp <= 0 && !nearest.dead) {
-                nearest.dead = true;
-              }
+          } else {
+            // Attacking the line: tick attack timer.
+            e.attackT += dt;
+            if (e.attackT >= ENEMY_ATTACK_INTERVAL) {
+              e.attackT = 0;
+              const rawDmg = e.kind === 'brute' ? (e.isBoss ? 80 : 40) : 12;
+              const reduced = rawDmg * (1 - teamDef);
+              teamDmgThisTick += Math.max(1, Math.round(reduced));
+              const amp = e.isBoss ? 14 : e.kind === 'brute' ? 8 : 4;
+              if (amp > shakeAmpThisTick) shakeAmpThisTick = amp;
+              anyAttackingThisTick = true;
             }
-            triggerShake(e.isBoss ? 22 : e.kind === 'brute' ? 14 : 8);
-            playSfx('hero_take_dmg');
-            e.dyingT = 0.01;
           }
+        }
+        if (teamDmgThisTick > 0) {
+          setTeamHp((hp) => Math.max(0, hp - teamDmgThisTick));
+        }
+        if (anyAttackingThisTick) {
+          triggerShake(shakeAmpThisTick);
+          playSfx('hero_take_dmg');
         }
 
         // projectiles
@@ -465,8 +489,8 @@ export const Battle = () => {
         );
         s.pops = s.pops.filter((d) => d.t < 1);
 
-        // wipe → gameover when every combatant has fallen.
-        if (combatants.length > 0 && combatants.every((c) => c.dead) && outcome === 'running') {
+        // defense line collapse → gameover when team HP exhausted.
+        if (teamHp <= 0 && outcome === 'running') {
           playSfx('game_over');
           setOutcome('gameover');
         }
@@ -494,7 +518,7 @@ export const Battle = () => {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paused, outcome, currentWaveIdx, fireAt, spawnEnemy, handleKill, force]);
+  }, [paused, outcome, currentWaveIdx, fireAt, spawnEnemy, handleKill, force, teamHp, teamDef, triggerShake]);
 
   // Settle gold to wallet exactly once when the run ends.
   useEffect(() => {
@@ -533,6 +557,68 @@ export const Battle = () => {
       <div className={styles.vignette} />
 
       <TopBar gold={gold} onPause={togglePause} />
+
+      {/* Team defense line HP bar — TD 防線血量 */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 60,
+          left: 14,
+          right: 14,
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <span
+          style={{
+            font: '700 11px/1 Sora, sans-serif',
+            color: 'rgba(255, 220, 180, 0.85)',
+            letterSpacing: 1,
+            textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+          }}
+        >
+          防線
+        </span>
+        <div
+          style={{
+            flex: 1,
+            height: 14,
+            borderRadius: 7,
+            background: 'rgba(12, 6, 22, 0.78)',
+            border: '1px solid rgba(180, 140, 255, 0.35)',
+            overflow: 'hidden',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            position: 'relative',
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: `${Math.max(0, (teamHp / teamHpMax) * 100)}%`,
+              background: 'linear-gradient(180deg, #4ade80 0%, #16a34a 100%)',
+              transition: 'width 80ms linear',
+            }}
+          />
+          <span
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'grid',
+              placeItems: 'center',
+              font: '800 10px/1 Sora, sans-serif',
+              color: '#fff',
+              textShadow: '0 1px 2px rgba(0,0,0,0.85)',
+            }}
+          >
+            {Math.max(0, Math.round(teamHp)).toLocaleString()}/{teamHpMax.toLocaleString()}
+          </span>
+        </div>
+      </div>
+
 
       {s.enemies.map((e) => (
         <EnemyComp key={e.id} e={e} />
