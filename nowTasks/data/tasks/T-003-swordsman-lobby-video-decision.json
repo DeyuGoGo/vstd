@@ -5,10 +5,11 @@
   "ticket": null,
   "branch": null,
   "worktree": null,
-  "status": "design",
+  "status": "done",
   "owner": "claude",
   "createdAt": "2026-05-25T17:44:44+08:00",
-  "updatedAt": "2026-05-25T17:44:44+08:00",
+  "updatedAt": "2026-05-28T16:30:00+08:00",
+  "mergedAt": "2026-05-28T16:30:00+08:00",
   "dependencies": [],
   "plan": {
     "goal": "確定劍士被選為當前角色時，Lobby 主畫面該顯示什麼 — 三選一拍板（用星奈當 fallback / 用 avatar 靜態大圖 / 等劍士專屬影片），若需要執行則開後續單。",
@@ -32,9 +33,9 @@
       { "id": "s3", "title": "拍板 + 開後續執行單（若需要）", "status": "todo" }
     ],
     "openQuestions": [
-      "Q1：短期解 vs 長期解 — 半年內可以接受劍士的 lobby 顯示星奈嗎？",
-      "Q2：美術產一支劍士 lobby 影片的成本（時間 + ComfyUI prompt 設計）多大？",
-      "Q3：如果要靜態 fallback，要全身立繪還是上半身？"
+      "[已解 @ 2026-05-28] Q1：拍板『先不用做劍士的 lobby』— 接受現狀。Q2、Q3 隨之不需要回答。",
+      "[已解 @ 2026-05-28] Q2：N/A（Q1 拍板後不討論）",
+      "[已解 @ 2026-05-28] Q3：N/A（Q1 拍板後不討論）"
     ],
     "estimatedSize": "S",
     "riskNotes": [
@@ -55,6 +56,16 @@
       "ts": "2026-05-25T17:44:44+08:00",
       "type": "note",
       "msg": "task 開立。design-only 任務，產出是後續單而非 code。openQuestions 需要先拍板才能領單。"
+    },
+    {
+      "ts": "2026-05-28T16:25:00+08:00",
+      "type": "progress",
+      "msg": "Preflight：Lobby.tsx line 50-74 已支援 per-character video（display char = lineup 第一格 > selectedCharacterId > DEFAULT）。swordsman.ts lobbyVideo 寫死 starina 的 mp4 path → 玩家編劍士進 slot 1 後 lobby 仍跑星奈影片。沒有 onError fallback 機制。"
+    },
+    {
+      "ts": "2026-05-28T16:30:00+08:00",
+      "type": "decision",
+      "msg": "User 拍板『先不用做劍士的 lobby』。接受現狀（劍士=隱形角色在 lobby）。已知限制，未來想做時重開新單。close as done."
     }
   ]
 }
