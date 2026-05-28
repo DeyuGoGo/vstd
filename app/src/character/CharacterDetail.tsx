@@ -191,6 +191,10 @@ export const CharacterDetail = () => {
             <span className={styles.derivedValue}>{(eff.defReduction * 100).toFixed(1)}%</span>
           </div>
           <div className={styles.derivedRow}>
+            <span className={styles.derivedLabel}>回血</span>
+            <span className={styles.derivedValue}>{eff.hpRegenPerSec.toFixed(1)} /秒</span>
+          </div>
+          <div className={styles.derivedRow}>
             <span className={styles.derivedLabel}>物攻</span>
             <span className={styles.derivedValue}>ATK {eff.pAtk}</span>
           </div>

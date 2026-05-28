@@ -82,6 +82,7 @@ const buildCombatants = (lineup: (string | null)[]): Combatant[] => {
         critBase: eff.critBase,
         projSpeed: eff.projSpeed,
         defReduction: eff.defReduction,
+        hpRegenPerSec: eff.hpRegenPerSec,
       }),
       fireT: 0,
       dead: false,
@@ -128,19 +129,23 @@ export const Battle = () => {
   const [outcome, setOutcome] = useState<Outcome>('running');
 
   // ── Team defense pool (TD 防線) ──────────────────────
-  // teamHpMax = sum of all combatants' hpMax；teamDef = avg defReduction（VIT 來源）。
+  // teamHpMax = sum of all combatants' hpMax；teamDef = avg defReduction（VIT 來源）；
+  // teamRegen = sum hpRegenPerSec（VIT 來源，多人疊加）。
   // 怪物穿越攻擊線後 attacking=true，每 ENEMY_ATTACK_INTERVAL 秒攻擊一次扣 teamHp。
+  // 同時 teamHp += teamRegen × dt（capped at teamHpMax，無 overheal）。
   const teamStats = (() => {
     const combatants = combatantsRef.current;
-    if (combatants.length === 0) return { hpMax: 1, def: 0 };
+    if (combatants.length === 0) return { hpMax: 1, def: 0, regen: 0 };
     const hpMax = combatants.reduce((sum, c) => sum + c.hpMax, 0);
     const defSum = combatants.reduce((sum, c) => sum + c.mods.defReduction, 0);
     const def = defSum / combatants.length;
-    return { hpMax, def };
+    const regen = combatants.reduce((sum, c) => sum + c.mods.hpRegenPerSec, 0);
+    return { hpMax, def, regen };
   })();
   const [teamHp, setTeamHp] = useState(teamStats.hpMax);
   const teamHpMax = teamStats.hpMax;
   const teamDef = teamStats.def;
+  const teamRegen = teamStats.regen;
 
   useEffect(() => {
     preloadSfx();
@@ -375,8 +380,13 @@ export const Battle = () => {
             }
           }
         }
-        if (teamDmgThisTick > 0) {
-          setTeamHp((hp) => Math.max(0, hp - teamDmgThisTick));
+        // Apply damage + regen to teamHp in a single setter (one re-render per tick).
+        const regenThisTick = teamRegen * dt;
+        if (teamDmgThisTick > 0 || regenThisTick > 0) {
+          setTeamHp((hp) => {
+            const next = hp - teamDmgThisTick + regenThisTick;
+            return Math.max(0, Math.min(teamHpMax, next));
+          });
         }
         if (anyAttackingThisTick) {
           triggerShake(shakeAmpThisTick);
@@ -518,7 +528,7 @@ export const Battle = () => {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paused, outcome, currentWaveIdx, fireAt, spawnEnemy, handleKill, force, teamHp, teamDef, triggerShake]);
+  }, [paused, outcome, currentWaveIdx, fireAt, spawnEnemy, handleKill, force, teamHp, teamDef, teamRegen, teamHpMax, triggerShake]);
 
   // Settle gold to wallet exactly once when the run ends.
   useEffect(() => {

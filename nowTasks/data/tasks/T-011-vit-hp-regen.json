@@ -1,0 +1,72 @@
+{
+  "id": "T-011-vit-hp-regen",
+  "number": "T-011",
+  "title": "VIT 三效化：HP + 防禦 + 防線 HP regen",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "review",
+  "owner": "claude",
+  "createdAt": "2026-05-28T19:50:00+08:00",
+  "updatedAt": "2026-05-28T20:05:00+08:00",
+  "lastReviewAt": "2026-05-28T20:05:00+08:00",
+  "dependencies": ["T-010-defense-line-shared-hp"],
+  "plan": {
+    "goal": "VIT 第三軌 — 持續回復 teamHp。低 VIT 一隻怪都頂不住、高 VIT 滿點能撐住中量怪潮，跟 RO『VIT 同時加 HP regen』直覺對齊。",
+    "boundaryConditions": [
+      "只動 statFormulas + Battle.tsx tick + CharacterDetail UI",
+      "回血不會超過 teamHpMax（overheal cap）",
+      "Team aggregate = sum of combatants' hpRegenPerSec（多人防線疊加）",
+      "回血公式：VIT × 0.3 + (VIT/20)²，cap 由 LEVEL 邏輯間接限制"
+    ],
+    "preflightChecks": [
+      "確認 Battle.tsx tick 已有 dt（每幀），可以平滑加 regen × dt 到 teamHp",
+      "確認 EffectiveBattleStats 介面消費者全部不會 break（已有 pAtk/mAtk/def 經驗）",
+      "公式 sanity vs 怪物 DPS：VIT 87 cap regen 45 HP/s 大約能 cover 7 隻 minion 在線（dmg 6 each after 50% def）"
+    ],
+    "expectedDeliverables": [
+      "CharacterDetail 戰鬥能力預覽多『回血 X.X /秒』一欄",
+      "點 VIT + 號 回血數字同步上升（線性 + 平方項）",
+      "戰鬥場上 teamHp 在沒有怪物攻擊時會慢慢回復",
+      "怪物在線上時若 regen > 怪物 DPS，teamHp 維持滿；反之則下降",
+      "回血 cap 不會 over teamHpMax",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：Battle.tsx tick 內 dt 怎麼拿、teamHp setter 是否能在同一段做扣 + 加", "status": "done" },
+      { "id": "s2", "title": "實作：statFormulas 加 hpRegen helper + interface 欄位 + CharacterDetail UI", "status": "done" },
+      { "id": "s3", "title": "實作：Battle.tsx aggregate teamRegenPerSec + tick 內 teamHp += regen × dt（cap teamHpMax）", "status": "done" },
+      { "id": "s4", "title": "驗證：CharacterDetail 點 VIT 看三軌更新；理論上戰鬥場無怪時 teamHp 慢慢回升", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "regen 過高會讓 TD 失去張力（怪物清不掉但 HP 不掉）— 公式採保守 0.3 線性 + 平方項，需實玩調",
+      "回血是『連續累加』，若 React 每幀 setTeamHp 太頻繁可能效能慢 — 直接讓 setTeamHp 收掉 + regen × dt 同步",
+      "未來引入怪物『暴擊』或『穿透傷害』時 regen 設計可能要再平衡"
+    ],
+    "referenceFiles": [
+      "app/src/characters/statFormulas.ts",
+      "app/src/character/CharacterDetail.tsx",
+      "app/src/battle/Battle.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-28T19:50:00+08:00",
+      "type": "note",
+      "msg": "User 要求 VIT 第三軌 HP regen（不只防禦）。設計：sum aggregate、公式 VIT*0.3 + (VIT/20)²。VIT 87 cap 45 HP/s 大約 cover 7 minions/s 的 incoming dmg。"
+    },
+    {
+      "ts": "2026-05-28T20:00:00+08:00",
+      "type": "progress",
+      "msg": "實作：statFormulas 加 hpRegen helper + hpRegenPerSec 欄位 / engine/types Mods + InitialModsSeed + initialMods 同步加 hpRegenPerSec / Battle.tsx buildCombatants 傳入 eff.hpRegenPerSec / teamStats 多算 regen（sum 而非 avg，多人疊加）/ tick 段 setTeamHp 統一處理 dmg + regen（單次 re-render）：next = hp - dmg + regen*dt，cap min/max / CharacterDetail UI 新加『回血 X.X /秒』欄位。typecheck pass。"
+    },
+    {
+      "ts": "2026-05-28T20:05:00+08:00",
+      "type": "review",
+      "msg": "驗證對齊：劍士 VIT 30 → 回血 11.3 /秒（公式：0.3×30 + (30/20)² = 9 + 2.25 = 11.25 → 11.3 ✓）。三軌完整：HP 4,700 / 防禦 20.0% / 回血 11.3。CharacterDetail 預覽 8 行密集但資訊全。Runtime 戰鬥場 regen 行為需 user 開遊戲驗證（headless rAF throttle）。"
+    }
+  ]
+}

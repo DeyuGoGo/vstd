@@ -15,6 +15,7 @@ export interface EffectiveBattleStats {
   pAtk: number;             // 物理攻擊力 score：STR + DEX + LUK 軌（含平方項）
   mAtk: number;             // 魔法攻擊力 score：INT 軌（含平方項）
   defReduction: number;     // 物理減傷 0~0.5，被怪物撞擊時 actualDmg = rawDmg × (1 - defReduction)
+  hpRegenPerSec: number;    // 防線 HP regen：teamHp 每秒回復量（VIT 來源，多人防線疊加）
   projSpeed: number;
   projSpeedCap: number;
   critBase: number;
@@ -77,6 +78,18 @@ function physicalDefense(stats: Stats): number {
   return Math.min(0.5, linear + quad);
 }
 
+// ─── HP regen（仿 RO VIT 自然回復）────────────────────────────────
+// regenPerSec = VIT × 0.3 + (VIT/20)²
+// 線性 + 平方項。每秒回 teamHp，多人防線疊加。
+//
+// 採樣：VIT 0=0、10=3.3、30=11.3、50=21.3、87=45.0
+// vs 怪物 DPS：VIT 87 cap 45 HP/s 大約能 cover 7 minions 在線（6 HP/s each after 50% def）。
+function hpRegen(stats: Stats): number {
+  const linear = stats.vit * 0.3;
+  const quad = (stats.vit / 20) ** 2;
+  return linear + quad;
+}
+
 export function computeEffectiveBattleStats(
   base: CharacterBaseStats,
   stats: Stats
@@ -90,6 +103,7 @@ export function computeEffectiveBattleStats(
   const pAtk = physicalAtk(stats);
   const mAtk = magicalAtk(stats);
   const defReduction = physicalDefense(stats);
+  const hpRegenPerSec = hpRegen(stats);
   // dmg roll 暫採 pAtk + mAtk 加總（戰鬥內單一普攻）。未來實作職業 + 技能時拆軌。
   const dmgBonus = pAtk + mAtk;
 
@@ -100,6 +114,7 @@ export function computeEffectiveBattleStats(
     pAtk,
     mAtk,
     defReduction,
+    hpRegenPerSec,
     projSpeed: base.projSpeedBase + stats.dex * 4,
     projSpeedCap: base.projSpeedCap,
     critBase: base.critBase + stats.luk * 0.003,
