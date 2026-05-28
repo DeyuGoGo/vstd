@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #fdf6ee;
+  --color-card: #ffffff;
+  --color-text: #4d4337;
+  --color-text-light: #a89585;
+  --color-muted: #f5ecdf;
+  --color-accent: #e8b670;
+  --color-accent-strong: #d4a55a;
+  --color-border: #e8d9c5;
+
+  --color-status-design: #b08968;
+  --color-status-design-bg: #f5e8d3;
+  --color-status-active: #4a7c59;
+  --color-status-active-bg: #ddebd8;
+  --color-status-review: #b45309;
+  --color-status-review-bg: #fef3c7;
+  --color-status-done: #6b7280;
+  --color-status-done-bg: #e5e7eb;
+}
+
+html, body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", sans-serif;
+}
+
+.shadow-card {
+  box-shadow: 0 1px 2px rgba(109, 92, 77, 0.06), 0 4px 12px rgba(109, 92, 77, 0.08);
+}
+
+.shadow-card-hover {
+  box-shadow: 0 2px 4px rgba(109, 92, 77, 0.1), 0 8px 24px rgba(109, 92, 77, 0.14);
+}

@@ -51,3 +51,4 @@ next-env.d.ts
 nowTask/
 res_for_use/
 .claude/scheduled_tasks.lock
+PushCommit.md

@@ -1,0 +1,102 @@
+{
+  "id": "T-001-swordsman-mount-and-visual-check",
+  "number": "T-001",
+  "title": "劍士掛載進 CHARACTERS + 視覺驗證跑一輪",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-25T17:44:44+08:00",
+  "updatedAt": "2026-05-28T15:35:00+08:00",
+  "mergedAt": "2026-05-28T15:35:00+08:00",
+  "dependencies": [],
+  "plan": {
+    "goal": "玩家進遊戲後能在 Roster 看到劍士卡片，編入 lineup slot 1 進戰鬥能看到 4 圖層 sprite 顯示在三角形前位。座標可能歪，先記下來不修。",
+    "boundaryConditions": [
+      "此單只負責「掛上去 + 跑一輪 + 列問題清單」，不修任何視覺偏差（座標微調由 T-002 接手）",
+      "lobby video 暫接受用星奈的當 fallback（不處理，T-003 才討論）"
+    ],
+    "preflightChecks": [
+      "確認 app/public/img/swordsman/ 5 張 sprite + avatar 都存在且檔名對齊 swordsman.ts 的 asset 路徑",
+      "grep 確認 Roster / CharacterDetail 元件是動態讀 CHARACTERS 物件列出角色，不是 hardcode starina",
+      "確認 swordsman.ts 沒有任何 TypeScript 錯誤（與 starina.ts 結構一致）"
+    ],
+    "expectedDeliverables": [
+      "Roster 看得到劍士卡片：avatar 顯示 + 6 素質可預覽",
+      "點劍士進 CharacterDetail，HP / 攻擊範圍 / 攻速 / 傷害區間顯示為劍士數值（不是星奈）",
+      "編入 lineup slot 1 進戰鬥，能看到劍士 sprite（4 圖層）出現在三角形前位",
+      "視覺偏差清單交給 T-002 接手（哪些座標歪、哪些圖層被截、哪些 z-index 不對）",
+      "typecheck 通過、dev server 跑完一輪沒 runtime error"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：素材到位 + Roster/CharacterDetail 動態讀 CHARACTERS 確認", "status": "done" },
+      { "id": "s2", "title": "實作：swordsman 加進 CHARACTERS 物件 + 補上 usePlayerStore 初始 characters", "status": "done" },
+      { "id": "s3", "title": "驗證：dev server 跑 Lobby → 星城 → Roster → CharacterDetail → 戰鬥，記錄視覺偏差清單", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "座標沿用星奈，劍士體型比例不同，預期會歪（這就是要驗證的）",
+      "lobby video 用星奈的，可能會覺得「劍士的 lobby 怎麼是星奈」— 此單先接受，T-003 處理",
+      "avatar 圓框 mask 可能截到劍士臉部關鍵特徵（要看實際情況）"
+    ],
+    "referenceFiles": [
+      "app/src/characters/index.ts",
+      "app/src/characters/swordsman.ts",
+      "app/src/characters/starina.ts",
+      "app/src/roster/Roster.tsx",
+      "app/src/character/CharacterDetail.tsx",
+      "app/src/battle/components/Hero.tsx",
+      "app/src/stores/usePlayerStore.ts"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-25T17:44:44+08:00",
+      "type": "note",
+      "msg": "task 開立。前情：swordsman 5 sprite + avatar 已到位於 app/public/img/swordsman/，swordsman.ts 資料層完整，差 index.ts 沒掛載。"
+    },
+    {
+      "ts": "2026-05-25T17:50:00+08:00",
+      "type": "progress",
+      "msg": "領單開工。Preflight 全綠：(1) 5 sprite + avatar 路徑與檔名 100% 對齊 (2) Roster.tsx / CharacterDetail.tsx / Battle.tsx 全部用 CHARACTERS[id] 動態讀取，無 hardcode (3) 基線 typecheck pass。"
+    },
+    {
+      "ts": "2026-05-25T17:55:00+08:00",
+      "type": "progress",
+      "msg": "s2 改動：app/src/characters/index.ts 加 import + 加進 CHARACTERS。typecheck pass。"
+    },
+    {
+      "ts": "2026-05-25T18:00:00+08:00",
+      "type": "blocked",
+      "msg": "視覺驗證進 Roster 後發現「擁有角色」只顯示星奈 — usePlayerStore 初始 characters 只 seed 星奈。CHARACTERS 是目錄、player.characters 是持有名單，兩者不同。"
+    },
+    {
+      "ts": "2026-05-25T18:01:00+08:00",
+      "type": "decision",
+      "msg": "決議：scope creep 接受 — 在 usePlayerStore 初始 characters 補上 swordsman entry（startingStats 從 CHARACTERS.swordsman 來）。理由：T-001 goal 是「玩家看得到劍士卡」，沒有 owned entry 就驗證不到 CharacterDetail。長期 acquire 機制屬於另一張單（取得角色 UX）。"
+    },
+    {
+      "ts": "2026-05-25T18:03:00+08:00",
+      "type": "progress",
+      "msg": "驗證通過項目：(1) Roster「擁有角色 2 名」顯示星奈+劍士 (2) 點劍士進 CharacterDetail 顯示劍士數值：HP 3890 / 暴擊 15.3% / 傷害 97-147 / 攻速 -0.5% — 全部對齊公式 (3) 編入 Slot 1，進戰鬥場可看到劍士 4 圖層 sprite 在三角形前位 (4) DOM inspect 確認 4 圖層 src/座標/z-index 與 swordsman.ts 100% 一致：base z2 (24,15)、weapon z1 (30,11)、headgear z4 (40,8)、hand_cover z5 (46,58)。"
+    },
+    {
+      "ts": "2026-05-25T18:04:00+08:00",
+      "type": "review",
+      "msg": "視覺偏差清單（交給 T-002）：\n\n【小偏差】\n1. Roster 卡片劍士 avatar 偏暗 — 對照星奈 avatar 亮且清楚，劍士臉部特徵不明顯。推測 avatar.png 構圖偏暗或圓框 mask 截到關鍵部位。可選擇重做 avatar 或調整 mask 區域。\n\n【可接受 / 不需修】\n2. 戰鬥場 idle 站姿 4 圖層整體合理 — 劍握在手、頭飾在頂、身體姿態自然。座標沿用星奈意外地適合。\n\n【未驗證】\n3. Attack 動畫（揮劍時 weapon / hand_cover 座標切換）— 在 headless preview rAF 被 throttle，敵人不 spawn，attack 動作沒觸發。需要 manual 在真實瀏覽器跑一輪確認。\n4. 三角形站位 slot 1/2 後位視覺 — 目前只測 slot 0 前位，slot 1/2 沒測（要 3 隻角色才能驗）。\n5. lobby 影片切換 — swordsman.ts lobbyVideo 指向 starina 的影片，未測選中劍士時 lobby 行為（plan 標 T-003 處理）。"
+    },
+    {
+      "ts": "2026-05-28T15:33:00+08:00",
+      "type": "decision",
+      "msg": "Avatar 偏暗根因找到：原始檔對比 — starina/avatar.png 內建圓框 + 深紫底（直接貼合 Roster 圓形容器），swordsman/avatar.png 是白背景純角色 + 圓邊未處理，套進 Roster 容器顏色衝突。不是 mask 截到問題，是兩張 avatar 規格不一致。修正方向交給 T-002：要嘛重做 swordsman avatar 加圓框暗底、要嘛改 Roster 容器不再依賴 avatar 內建底。"
+    },
+    {
+      "ts": "2026-05-28T15:35:00+08:00",
+      "type": "decision",
+      "msg": "接受 → done。理由：5 個 expectedDeliverables 全綠（Roster 顯示、CharacterDetail 數值、戰鬥場 sprite、4 圖層 DOM 座標、typecheck）。剩餘『未驗證』項目（attack 動畫、slot 1/2 後位）屬於 T-002 範圍；lobby 影片屬於 T-003。avatar 偏暗根因已釐清，修正動作落 T-002。"
+    }
+  ]
+}

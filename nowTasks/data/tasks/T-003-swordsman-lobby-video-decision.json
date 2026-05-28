@@ -1,0 +1,60 @@
+{
+  "id": "T-003-swordsman-lobby-video-decision",
+  "number": "T-003",
+  "title": "劍士 lobby 顯示方式決策（暫用星奈 vs 靜態大圖 vs 影片）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "design",
+  "owner": "claude",
+  "createdAt": "2026-05-25T17:44:44+08:00",
+  "updatedAt": "2026-05-25T17:44:44+08:00",
+  "dependencies": [],
+  "plan": {
+    "goal": "確定劍士被選為當前角色時，Lobby 主畫面該顯示什麼 — 三選一拍板（用星奈當 fallback / 用 avatar 靜態大圖 / 等劍士專屬影片），若需要執行則開後續單。",
+    "boundaryConditions": [
+      "此單只做決策、寫設計筆記、開後續執行單，不寫實作 code",
+      "不影響 T-001 / T-002，因為它們的 lobby 預設仍是星奈"
+    ],
+    "preflightChecks": [
+      "看 Lobby 元件現在怎麼吃影片（是否已支援 per-character video / fallback 機制）",
+      "看 swordsman 資料層的 lobbyVideo 欄位現在指向哪",
+      "確認專案有沒有別的「角色切換 lobby 視覺」需求或計畫（避免重複設計）"
+    ],
+    "expectedDeliverables": [
+      "三選一的比較表：用星奈當 fallback / avatar 靜態大圖 / 等劍士專屬影片，列出每個選項的優缺點 + 後續單規模估計",
+      "拍板選一個，附理由",
+      "若選方案 2 或 3，產出後續執行單（含美術工單編號）寫進 nowTasks"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：Lobby 現行 video 載入機制 + per-character 切換點", "status": "todo" },
+      { "id": "s2", "title": "設計：列三選一比較表 + 美術成本估計", "status": "todo" },
+      { "id": "s3", "title": "拍板 + 開後續執行單（若需要）", "status": "todo" }
+    ],
+    "openQuestions": [
+      "Q1：短期解 vs 長期解 — 半年內可以接受劍士的 lobby 顯示星奈嗎？",
+      "Q2：美術產一支劍士 lobby 影片的成本（時間 + ComfyUI prompt 設計）多大？",
+      "Q3：如果要靜態 fallback，要全身立繪還是上半身？"
+    ],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "「用星奈當 fallback」如果拖太久不換，玩家會覺得遊戲粗糙",
+      "「等專屬影片」如果美術一直不來，可能反過來拖住 swordsman 整合進度",
+      "決策後改 Lobby 元件結構可能牽連現有 starina 行為（動畫迴圈、blink、sleeve sway 等）"
+    ],
+    "referenceFiles": [
+      "app/src/lobby/Lobby.tsx",
+      "app/src/characters/swordsman.ts",
+      "app/public/video/lobby-idle.mp4",
+      "img_order/009_swordsman/SPEC.md"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-25T17:44:44+08:00",
+      "type": "note",
+      "msg": "task 開立。design-only 任務，產出是後續單而非 code。openQuestions 需要先拍板才能領單。"
+    }
+  ]
+}

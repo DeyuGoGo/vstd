@@ -1,0 +1,59 @@
+{
+  "id": "T-004-working-dir-cleanup",
+  "number": "T-004",
+  "title": "working dir 清理 + commit 已刪除素材",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "design",
+  "owner": "claude",
+  "createdAt": "2026-05-25T17:44:44+08:00",
+  "updatedAt": "2026-05-25T17:44:44+08:00",
+  "dependencies": [],
+  "plan": {
+    "goal": "工作區回到乾淨狀態 — 那 80+ 個 git 還追蹤但已刪除的舊素材（lobby-starina cutout / blessings PNG / hero PNG 等）正式從版本控制移除，新增雜檔分流處理。",
+    "boundaryConditions": [
+      "不擅自刪除 git 沒追蹤的檔案（G6）— 只處理 git 已知 deletion + 新增的 untracked 由人類確認後處理",
+      "不改 src/ 程式碼"
+    ],
+    "preflightChecks": [
+      "git status 列出所有 D 跟 ?? 的檔案總清單",
+      "grep 確認 src/ 內沒有 import 指向那些被刪除的素材路徑（避免 commit 後 build 壞）",
+      "確認 ch2_cg.png、app/archive/沒用到的圖/ 等 untracked 是誰加的、要留還是刪"
+    ],
+    "expectedDeliverables": [
+      "git status 完全乾淨（或只剩極少數 known unstaged）",
+      "一個 cleanup commit 涵蓋所有 archive / 刪除動作",
+      "應留的 untracked 加進 git，該刪的刪掉，該搬 archive 的搬好",
+      "typecheck 通過 + dev server 跑得起來，沒有破圖"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：盤點 git status 全部變更，分四類（刪 / 留 / 搬 archive / 不確定 → 問）", "status": "todo" },
+      { "id": "s2", "title": "實作：依分類處理 — 該移除的從 git 移除、該留的 git add、該搬的 mv 到 archive", "status": "todo" },
+      { "id": "s3", "title": "驗證：typecheck 通過 + dev server 跑一輪確認沒破圖 + commit", "status": "todo" }
+    ],
+    "openQuestions": [
+      "Q1：ch2_cg.png 是 chapter 2 CG 素材嗎？要留在 root 還是搬去 res_for_use 之類的暫存區？",
+      "Q2：app/archive/沒用到的圖/ 是誰加的、預期用途？要正式 archive 還是直接刪？"
+    ],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "刪錯素材可能讓畫面破圖（typecheck 過不代表 runtime OK）— 必須跑一輪 dev server",
+      "archive/ 內的舊資源未來可能想找回來，不該全刪 — 走 git history 也找得回，但移到 archive 比較安全",
+      "此單獨立，可跟 T-001 並行（不會互相影響）"
+    ],
+    "referenceFiles": [
+      ".gitignore",
+      "app/archive/",
+      "img_order/008_lobby_live_rig/SPEC.md"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-25T17:44:44+08:00",
+      "type": "note",
+      "msg": "task 開立。housekeeping 性質，跟劍士並行不衝突。"
+    }
+  ]
+}

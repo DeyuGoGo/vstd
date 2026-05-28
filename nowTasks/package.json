@@ -1,0 +1,27 @@
+{
+  "name": "vstd-nowtasks",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 4500",
+    "build": "next build",
+    "start": "next start -p 4500"
+  },
+  "dependencies": {
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4",
+    "lucide-react": "^0.460.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "tailwindcss": "^4.0.0-beta.7",
+    "@tailwindcss/postcss": "^4.0.0-beta.7",
+    "postcss": "^8.4.49"
+  }
+}

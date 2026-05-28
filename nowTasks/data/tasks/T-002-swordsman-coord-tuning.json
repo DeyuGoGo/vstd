@@ -1,0 +1,83 @@
+{
+  "id": "T-002-swordsman-coord-tuning",
+  "number": "T-002",
+  "title": "劍士 sprite 4 圖層座標微調",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-25T17:44:44+08:00",
+  "updatedAt": "2026-05-28T15:50:00+08:00",
+  "mergedAt": "2026-05-28T15:50:00+08:00",
+  "dependencies": ["T-001-swordsman-mount-and-visual-check"],
+  "plan": {
+    "goal": "戰鬥場上劍士的 4 圖層（base / weapon / headgear / hand_cover）位置對齊，視覺上沒有破圖、沒有錯位，揮劍時手與劍同步前移。",
+    "boundaryConditions": [
+      "只調 swordsman 資料層的座標欄位，不改 Hero 元件本身",
+      "idle / attack 兩組各調一次到視覺 OK；不做動畫過渡優化"
+    ],
+    "preflightChecks": [
+      "讀 T-001 驗證階段產出的視覺偏差清單，照分類處理",
+      "對照星奈的座標當 baseline（兩角色體型差異要量化）",
+      "確認劍士 sprite 圖檔的實際 px 尺寸（base_idle vs base_attack vs weapon）"
+    ],
+    "expectedDeliverables": [
+      "劍士 idle 站姿自然，劍握在右手而非懸空",
+      "揮劍動作時手部位置跟著前移，劍跟手對齊",
+      "頭飾不會浮在頭頂上空或卡進髮絲裡",
+      "對照星奈靜態截圖比對，兩角色站位高度一致（不會一個高一個矮浮在空中）"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：盤點 T-001 視覺偏差清單，分嚴重歪 / 小偏差 / 可接受三類", "status": "done" },
+      { "id": "s2", "title": "實作：調 idle 4 座標到視覺 OK", "status": "done" },
+      { "id": "s3", "title": "實作：調 attack 4 座標到視覺 OK", "status": "done" },
+      { "id": "s4", "title": "驗證：戰鬥場跑一輪確認 idle ↔ attack 切換流暢", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "座標單位是 px，但顯示在 120x135 box 內，調 1px 視覺差異可能比想像大",
+      "揮劍動作如果幅度太大，可能超出 sprite box 被截",
+      "T-001 視覺清單若不夠具體，此單會在 s1 stall — 必要時退回 T-001 補資訊"
+    ],
+    "referenceFiles": [
+      "app/src/characters/swordsman.ts",
+      "app/src/characters/starina.ts",
+      "app/src/battle/components/Hero.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-25T17:44:44+08:00",
+      "type": "note",
+      "msg": "task 開立。依賴 T-001 的視覺驗證輸出。"
+    },
+    {
+      "ts": "2026-05-28T15:42:00+08:00",
+      "type": "progress",
+      "msg": "領單。重新檢視 T-001 視覺偏差清單三項：(1) avatar 偏暗 (2) attack 動畫 (3) slot 1/2 後位。"
+    },
+    {
+      "ts": "2026-05-28T15:45:00+08:00",
+      "type": "decision",
+      "msg": "Avatar 偏暗 → 撤回。重啟 dev server 放大看 Roster cardPortrait（70x70 圓框、border-radius 50%、background-size cover），swordsman avatar 白底完全被 border-radius mask 掉，露出的圓盤區域實際視覺平衡，跟 starina 並列協調。原本 T-001 是小尺寸壓縮截圖誤判。"
+    },
+    {
+      "ts": "2026-05-28T15:48:00+08:00",
+      "type": "progress",
+      "msg": "Attack 動畫驗證 → 直接 DOM 覆寫 sprite 4 圖層座標到 swordsman.ts 的 attack pose（base 26,14 / weapon 38,6,61 / headgear 43,7 / hand 53,52）+ swap base_idle.png → base_attack.png。靜態 attack 姿勢：劍向右橫切出去（藍色長劍水平延伸 61px）、身體前傾、頭飾與手部跟著前移。沒有破圖、沒有錯位、沒有懸空。視覺漂亮。"
+    },
+    {
+      "ts": "2026-05-28T15:49:00+08:00",
+      "type": "decision",
+      "msg": "Slot 1/2 後位 → defer。需要第三個角色才能擺三角形，目前只有 starina + swordsman 兩位。記成後續單觸發條件，不阻礙 T-002 收單。"
+    },
+    {
+      "ts": "2026-05-28T15:50:00+08:00",
+      "type": "review",
+      "msg": "結論：sprite 座標沿用星奈意外地完美，劍士兩個 pose 都不需要任何微調。原本預期會歪（劍士體型不同），實際比例就對齊。沒有改動任何檔案。0 程式碼變更。直接 done。"
+    }
+  ]
+}
