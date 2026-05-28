@@ -12,6 +12,8 @@ export interface EffectiveBattleStats {
   hpMax: number;
   fireCdMul: number;        // Battle.tsx 內部用：fire interval = fireCdBase × fireCdMul
   aspd: number;             // UI 顯示用：仿 RO 整數分（200 - interval × 100），interval 秒
+  pAtk: number;             // 物理攻擊力 score：STR + DEX + LUK 軌（含平方項）
+  mAtk: number;             // 魔法攻擊力 score：INT 軌（含平方項）
   projSpeed: number;
   projSpeedCap: number;
   critBase: number;
@@ -19,6 +21,15 @@ export interface EffectiveBattleStats {
   dmgMin: number;
   dmgMax: number;
 }
+
+// ─── 四大職業 stat 軌（將來實作職業時對齊用）────────────────────────
+// 弓箭手（遠程普攻）：DEX 主、LUK 副，吃 pAtk
+// 劍士（近戰技能） ：STR 主、VIT 副，吃 pAtk
+// 法師（遠程技能） ：INT 主、DEX 副，吃 mAtk
+// 刺客（攻速 + 爆擊普攻）：AGI + STR + LUK 分散，主要吃 pAtk + 高 ASPD + 高 crit
+//
+// 共通公式（不依職業）：所有角色都依此公式計算 pAtk / mAtk。
+// 推主屬性回報邊際遞增（平方項生效），對應 RO 的「練主屬性才划算」直覺。
 
 // ─── 仿 RO 攻速曲線 ────────────────────────────────────────────────
 // aspdScore = AGI + DEX × 0.3            （AGI 主、DEX 副，符合 RO ASPD 邏輯）
@@ -32,15 +43,26 @@ function aspdMultiplier(stats: Stats): number {
   return Math.max(0.4, raw);
 }
 
-// ─── 仿 RO StrATK 平方項 ──────────────────────────────────────────
-// strAtk = STR + floor((STR/10)²)
-// 每 10 點 STR 額外送 1²、2²、3²… 邊際遞增。
-// 採樣：str 10=+11、str 30=+39、str 50=+75、str 87=+162
-function statDamageBonus(stats: Stats): number {
-  const strAtk = stats.str + Math.floor((stats.str / 10) ** 2);
-  const intAtk = stats.int * 2;                    // 法傷保持線性 2x（caster 軸）
-  const dexAtk = Math.floor(stats.dex * 0.5);      // DEX 副傷害（主貢獻在攻速 + projSpeed）
-  return strAtk + intAtk + dexAtk;
+// ─── 物理攻擊 pAtk（仿 RO StatATK）────────────────────────────────
+// strBonus = STR + floor((STR/10)²)       — 劍士 / 刺客主軸
+// dexBonus = DEX + floor((DEX/10)²)       — 弓箭手主軸
+// luckBonus = floor(LUK × 0.5)            — 副屬性（刺客 / 弓箭手都需要）
+//
+// 採樣（87 點全押主）：strBonus 87 = 162、dexBonus 87 = 162、luckBonus 87 = 43
+function physicalAtk(stats: Stats): number {
+  const strBonus = stats.str + Math.floor((stats.str / 10) ** 2);
+  const dexBonus = stats.dex + Math.floor((stats.dex / 10) ** 2);
+  const luckBonus = Math.floor(stats.luk * 0.5);
+  return strBonus + dexBonus + luckBonus;
+}
+
+// ─── 魔法攻擊 mAtk（仿 RO MAtk）───────────────────────────────────
+// intBonus = INT × 2 + floor((INT/10)²)
+// 法師獨吃此軌（base 2x 線性 + 平方項）。其他職業堆 INT 也有少量 mAtk 但不划算。
+//
+// 採樣：INT 0=0、10=21、30=69、50=125、87=249
+function magicalAtk(stats: Stats): number {
+  return stats.int * 2 + Math.floor((stats.int / 10) ** 2);
 }
 
 export function computeEffectiveBattleStats(
@@ -52,12 +74,18 @@ export function computeEffectiveBattleStats(
   // 採樣：starina agi 0 → 158、agi 87 cap → 183；swordsman agi 0 → 145、agi 87 cap → 178
   const interval = base.fireCdBase * fireCdMul;
   const aspd = Math.round(200 - interval * 100);
-  const dmgBonus = statDamageBonus(stats);
+
+  const pAtk = physicalAtk(stats);
+  const mAtk = magicalAtk(stats);
+  // dmg roll 暫採 pAtk + mAtk 加總（戰鬥內單一普攻）。未來實作職業 + 技能時拆軌。
+  const dmgBonus = pAtk + mAtk;
 
   return {
     hpMax: base.hpBase + stats.vit * 30,
     fireCdMul,
     aspd,
+    pAtk,
+    mAtk,
     projSpeed: base.projSpeedBase + stats.dex * 4,
     projSpeedCap: base.projSpeedCap,
     critBase: base.critBase + stats.luk * 0.003,

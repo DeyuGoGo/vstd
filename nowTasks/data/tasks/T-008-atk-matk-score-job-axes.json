@@ -1,0 +1,76 @@
+{
+  "id": "T-008-atk-matk-score-job-axes",
+  "number": "T-008",
+  "title": "攻擊力 UI 套 RO 風（pAtk / mAtk score）+ 公式對齊四大職業",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-28T18:15:00+08:00",
+  "updatedAt": "2026-05-28T18:30:00+08:00",
+  "mergedAt": "2026-05-28T18:30:00+08:00",
+  "dependencies": ["T-007-aspd-score-display"],
+  "plan": {
+    "goal": "CharacterDetail 顯示『ATK XXX』『MATK XXX』兩個整數 score（仿 RO），玩家直觀看物理 / 魔法攻擊力分流。公式給 STR/DEX/INT 都有平方項，能讓未來四大職業（弓箭手 DEX / 劍士 STR / 法師 INT / 刺客 STR+AGI+LUK）各自爽。",
+    "boundaryConditions": [
+      "只動 statFormulas + CharacterDetail，戰鬥 dmgMin/Max roll 邏輯不動",
+      "不引入 jobId 屬性、不分職業欄位 — 設計用註解標記，等實際做職業才落地",
+      "保留現有 dmg 區間顯示（玩家還是要看實戰 roll 範圍），新增 ATK / MATK 為輔助"
+    ],
+    "preflightChecks": [
+      "確認 EffectiveBattleStats 介面所有消費者（grep 找 statFormulas 引用），改加欄位不會 break",
+      "確認 dmgMin/Max 與 pAtk + mAtk 的關係（是否總和 = dmg base 加成）",
+      "公式 sanity：87 點全押主屬性下，四職業 pAtk/mAtk 數字應該都在 150-250 區間，無爆量"
+    ],
+    "expectedDeliverables": [
+      "CharacterDetail 戰鬥能力預覽出現『物攻 ATK XXX』『法攻 MATK XXX』兩欄",
+      "點 STR + 號 ATK 數字上升（含平方項邊際遞增）",
+      "點 DEX + 號 ATK 數字上升（DEX 也有平方項）",
+      "點 INT + 號 MATK 數字上升（INT 平方項，base 2x 線性）",
+      "傷害區間欄位保留 — 跟 ATK/MATK 並列",
+      "公式註解清楚標出四大職業的主屬性對應軌",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：EffectiveBattleStats 介面消費者、dmgMin/Max 用途", "status": "done" },
+      { "id": "s2", "title": "設計：pAtk / mAtk 公式 + 87 點 sanity 表 + 四職業註解內容", "status": "done" },
+      { "id": "s3", "title": "實作：statFormulas 加 pAtk/mAtk + helpers + 四職業註解 + CharacterDetail UI 兩欄", "status": "done" },
+      { "id": "s4", "title": "驗證：CharacterDetail 點 STR/DEX/INT/LUK + 號看各軌獨立反應", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "現在 dmgMin/Max = base + pAtk + mAtk 加總；未來實作職業時可能要拆分（法師走 mAtk only、物理走 pAtk only）— 此單先不做",
+      "刺客屬性配置實際上是『分散到多軌』，未必 87 全押 — 平衡感要實際試打才知道",
+      "新增的 UI 欄位排版可能讓 CharacterDetail 太密集，必要時拆欄"
+    ],
+    "referenceFiles": [
+      "app/src/characters/statFormulas.ts",
+      "app/src/character/CharacterDetail.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-28T18:15:00+08:00",
+      "type": "note",
+      "msg": "User 定義四大職業（弓箭手 DEX 遠程普攻 / 劍士 STR 近戰技能 / 法師 INT 遠程技能 / 刺客 AGI+STR+LUK 攻速爆擊普攻）並要求『攻擊力也套一下』— 仿 ASPD score 風格給 ATK/MATK 整數顯示，公式對齊四職業 stat 軌。"
+    },
+    {
+      "ts": "2026-05-28T18:20:00+08:00",
+      "type": "progress",
+      "msg": "Preflight：EffectiveBattleStats 消費者：Battle.tsx 只用 dmgMin/Max（roll dmg），CharacterDetail 用 dmgMin/Max + 之後新加的 pAtk/mAtk。安全加欄位。"
+    },
+    {
+      "ts": "2026-05-28T18:25:00+08:00",
+      "type": "progress",
+      "msg": "實作：statFormulas 拆出 physicalAtk + magicalAtk 兩個 helper、新增 pAtk / mAtk 欄位、註解四職業軌道對齊。CharacterDetail 多加『物攻 ATK XXX』『法攻 MATK XXX』兩欄，傷害區間保留。Typecheck pass。"
+    },
+    {
+      "ts": "2026-05-28T18:30:00+08:00",
+      "type": "review",
+      "msg": "驗證全綠：(1) 劍士 default str3 dex2 luk1 → ATK 5 (3+2+0)、MATK 2 (1×2+0)、傷害 97-147 ✓ (2) STR +27 (→30) → ATK 5→41（strBonus 30+9=39 平方項生效 +9）✓ (3) DEX +28 (→30) → ATK 41→78（dexBonus 30+9=39）+ ASPD 同步 146→153（DEX 副屬性貢獻 aspdScore +9）✓ (4) 雙效：DEX 一個 stat 同時推 ATK + ASPD，弓箭手職業設計可行。close."
+    }
+  ]
+}
