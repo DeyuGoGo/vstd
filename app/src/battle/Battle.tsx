@@ -81,6 +81,7 @@ const buildCombatants = (lineup: (string | null)[]): Combatant[] => {
         fireCdMul: eff.fireCdMul,
         critBase: eff.critBase,
         projSpeed: eff.projSpeed,
+        defReduction: eff.defReduction,
       }),
       fireT: 0,
       dead: false,
@@ -343,8 +344,10 @@ export const Battle = () => {
                 nearest = c;
               }
             }
-            const dmg = e.kind === 'brute' ? (e.isBoss ? 80 : 40) : 12;
+            const rawDmg = e.kind === 'brute' ? (e.isBoss ? 80 : 40) : 12;
             if (nearest) {
+              const reduced = rawDmg * (1 - nearest.mods.defReduction);
+              const dmg = Math.max(1, Math.round(reduced));
               nearest.hp = Math.max(0, nearest.hp - dmg);
               if (nearest.hp <= 0 && !nearest.dead) {
                 nearest.dead = true;

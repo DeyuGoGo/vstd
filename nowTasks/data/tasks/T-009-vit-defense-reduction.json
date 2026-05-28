@@ -1,0 +1,76 @@
+{
+  "id": "T-009-vit-defense-reduction",
+  "number": "T-009",
+  "title": "VIT 雙效化：HP + 物理減傷 %（仿 RO DEF）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-28T18:45:00+08:00",
+  "updatedAt": "2026-05-28T19:00:00+08:00",
+  "mergedAt": "2026-05-28T19:00:00+08:00",
+  "dependencies": ["T-008-atk-matk-score-job-axes"],
+  "plan": {
+    "goal": "VIT 在 TD 場景有意義 — 不只是疊 HP（線性微感），同時提供物理減傷 %（雙效）。玩家點 VIT 看得到『血量更厚 + 撞擊扣血更少』的雙重回報，跟 STR/DEX 的平方項對稱、跟 RO VIT 提供 DEF 的設計對齊。",
+    "boundaryConditions": [
+      "只改 statFormulas + CharacterDetail + Battle.tsx 撞擊扣血一段",
+      "HP 公式（vit × 30）保留 — 不重寫，只是加第二軌減傷",
+      "減傷上限 50%（cap），避免無敵 tank",
+      "本次只做物理減傷（怪物撞擊），不分物理 / 魔法軌（戰鬥內目前沒魔法傷害源）"
+    ],
+    "preflightChecks": [
+      "確認 Battle.tsx 撞擊扣血在 line 333-352 一段，計算 dmg 後直接扣 nearest.hp",
+      "確認 Combatant 結構是否有 mods 物件、塞 defReduction 哪邊最乾淨",
+      "公式 sanity：VIT 0=0%、30=20%、87=50% cap — 邊際遞增但接近 cap 收斂"
+    ],
+    "expectedDeliverables": [
+      "CharacterDetail 戰鬥能力預覽出現『防禦 X.X%』一欄",
+      "點 VIT + 號 HP 上限 + 防禦 % 同時上升",
+      "戰鬥場高 VIT 角色被怪物撞擊扣血數字明顯小於低 VIT 角色",
+      "VIT 87 cap 時防禦顯示 50%",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：Battle.tsx 撞擊扣血段 + Combatant 結構 + mods 物件型別", "status": "done" },
+      { "id": "s2", "title": "實作：statFormulas 加 defReduction helper + interface 欄位 + CharacterDetail UI 一欄", "status": "done" },
+      { "id": "s3", "title": "實作：Battle.tsx 撞擊扣血套 defReduction 倍率", "status": "done" },
+      { "id": "s4", "title": "驗證：CharacterDetail 點 VIT 看雙效更新；戰鬥場低/高 VIT 角色撞擊扣血對比", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "Battle.tsx 撞擊扣血是 hot loop，每幀對每隻穿透敵人跑一次 — 公式不能複雜（math 簡單 OK）",
+      "減傷套法的順序：先計算完整 dmg → 套減傷 → 扣血。Math.floor 最後一步避免累積誤差",
+      "未來引入魔法傷害 / 真實傷害時，可能要區分『物理減傷』vs『全傷減傷』— 此單註解標記"
+    ],
+    "referenceFiles": [
+      "app/src/characters/statFormulas.ts",
+      "app/src/character/CharacterDetail.tsx",
+      "app/src/battle/Battle.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-28T18:45:00+08:00",
+      "type": "note",
+      "msg": "User 反饋：TD 環境 VIT 線性 +HP 感受意義低。設計：VIT 加第二軌物理減傷 %（仿 RO DEF），cap 50%。HP +30/pt 保留，新加防禦 % 公式 min(0.5, vit*0.005 + (vit/30)²*0.05)。採樣：VIT 30=20% / 87=50% cap。實際生存力 VIT 87 = +260% vs base，TD 場景變超核心 tank 投資。"
+    },
+    {
+      "ts": "2026-05-28T18:50:00+08:00",
+      "type": "progress",
+      "msg": "Preflight：(1) Battle.tsx 撞擊扣血 line 348-352：nearest.hp -= dmg (2) Combatant.mods 物件來自 engine/types.ts 的 Mods（已有 fireCdMul / critBonus 等欄位，加 defReduction 不破壞 in-battle buff 結構）(3) InitialModsSeed 要同步加欄位避免 typecheck 出錯。"
+    },
+    {
+      "ts": "2026-05-28T18:55:00+08:00",
+      "type": "progress",
+      "msg": "實作：statFormulas 加 physicalDefense helper + defReduction 欄位。engine/types.ts Mods + InitialModsSeed + initialMods 三處同步加 defReduction。Battle.tsx 撞擊扣血改：const reduced = rawDmg * (1 - nearest.mods.defReduction); dmg = max(1, round(reduced))。最低 1 dmg 避免完全免疫。CharacterDetail 新增『防禦 X.X%』欄位。"
+    },
+    {
+      "ts": "2026-05-28T19:00:00+08:00",
+      "type": "review",
+      "msg": "驗證全綠：(1) 劍士 default VIT 3 → 防禦 1.6%（公式：0.015+0.0005=0.0155 → 1.6% rounded）(2) VIT +27 (3→30) → HP 3890→4700 (+810=27×30 linear) + 防禦 1.6%→20.0%（公式：0.15+0.05=0.20）✓ 雙軌同步上升。Battle.tsx 撞擊段套 reduction，VIT 30 玩家撞 minion 從 12 變 10、撞 boss 80 變 64。close."
+    }
+  ]
+}

@@ -46,6 +46,9 @@ export interface Mods {
   critBonus: number;
   hpMaxBonus: number;
   goldGainMul: number;
+  // 物理減傷 0~0.5（cap），怪物撞擊扣血時 actualDmg = rawDmg × (1 - defReduction)。
+  // 來源：VIT 公式（statFormulas.physicalDefense）。將來裝備 / buff 可疊加。
+  defReduction: number;
   // Forward Y-distance the hero will engage enemies within. Belongs to the
   // character/skill, not a global rule — different heroes/abilities will set
   // this differently (close-range AoE vs long-range freeze).
@@ -57,6 +60,7 @@ export interface InitialModsSeed {
   fireCdMul: number;
   critBase: number;
   projSpeed: number;
+  defReduction: number;
 }
 
 export const initialMods = (seed: InitialModsSeed): Mods => ({
@@ -67,6 +71,7 @@ export const initialMods = (seed: InitialModsSeed): Mods => ({
   critBonus: seed.critBase,
   hpMaxBonus: 0,
   goldGainMul: 1,
+  defReduction: seed.defReduction,
   attackRange: seed.attackRange,
 });
 

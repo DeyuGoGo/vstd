@@ -187,6 +187,10 @@ export const CharacterDetail = () => {
             <span className={styles.derivedValue}>{fmtCritPct(eff.critBase)}</span>
           </div>
           <div className={styles.derivedRow}>
+            <span className={styles.derivedLabel}>防禦</span>
+            <span className={styles.derivedValue}>{(eff.defReduction * 100).toFixed(1)}%</span>
+          </div>
+          <div className={styles.derivedRow}>
             <span className={styles.derivedLabel}>物攻</span>
             <span className={styles.derivedValue}>ATK {eff.pAtk}</span>
           </div>
