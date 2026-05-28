@@ -11,7 +11,7 @@ export function xpMax(level: number): number {
 export interface EffectiveBattleStats {
   hpMax: number;
   fireCdMul: number;        // Battle.tsx 內部用：fire interval = fireCdBase × fireCdMul
-  attackPerSec: number;     // UI 顯示用：玩家直觀「每秒攻擊次數」= 1 / (fireCdBase × fireCdMul)
+  aspd: number;             // UI 顯示用：仿 RO 整數分（200 - interval × 100），interval 秒
   projSpeed: number;
   projSpeedCap: number;
   critBase: number;
@@ -48,13 +48,16 @@ export function computeEffectiveBattleStats(
   stats: Stats
 ): EffectiveBattleStats {
   const fireCdMul = aspdMultiplier(stats);
-  const attackPerSec = 1 / (base.fireCdBase * fireCdMul);
+  // ASPD（RO 風整數）：interval 秒 = fireCdBase × fireCdMul，ASPD = 200 - interval × 100
+  // 採樣：starina agi 0 → 158、agi 87 cap → 183；swordsman agi 0 → 145、agi 87 cap → 178
+  const interval = base.fireCdBase * fireCdMul;
+  const aspd = Math.round(200 - interval * 100);
   const dmgBonus = statDamageBonus(stats);
 
   return {
     hpMax: base.hpBase + stats.vit * 30,
     fireCdMul,
-    attackPerSec,
+    aspd,
     projSpeed: base.projSpeedBase + stats.dex * 4,
     projSpeedCap: base.projSpeedCap,
     critBase: base.critBase + stats.luk * 0.003,

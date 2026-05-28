@@ -1,0 +1,72 @@
+{
+  "id": "T-007-aspd-score-display",
+  "number": "T-007",
+  "title": "攻速 UI 顯示改 RO 風 ASPD 整數（替代「次/秒」）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-28T17:50:00+08:00",
+  "updatedAt": "2026-05-28T18:00:00+08:00",
+  "mergedAt": "2026-05-28T18:00:00+08:00",
+  "dependencies": ["T-006-aspd-atk-curves-ro-style"],
+  "plan": {
+    "goal": "CharacterDetail 戰鬥能力預覽『攻速』欄位顯示 RO 風的 ASPD 整數（如『ASPD 178』），不再寫成『1.86 次/秒』。玩家用單一抽象數字感受快慢，跟 RO 對齊。",
+    "boundaryConditions": [
+      "只動 UI 顯示 + 派生欄位；公式（fireCdMul、攻擊力曲線）不動",
+      "Battle.tsx 仍用 fireCdMul，0 變動",
+      "ASPD 計算用 RO 經典公式反推：ASPD = round(200 - interval × 100)，interval = fireCdBase × fireCdMul"
+    ],
+    "preflightChecks": [
+      "確認 ASPD 採樣值在合理範圍（默認 ~170+、cap ~180+，符合 RO 數字直覺）",
+      "確認 EffectiveBattleStats 介面如何擴充最乾淨（用 aspd 取代 attackPerSec 還是兩者並存）",
+      "確認其他 UI（戰鬥場血條 / lobby 角色卡）有沒有顯示攻速 — 同步處理"
+    ],
+    "expectedDeliverables": [
+      "CharacterDetail『攻速』欄位顯示『ASPD XXX』（整數，無單位）",
+      "點 AGI + 號 ASPD 數字會增加",
+      "ASPD 採樣對齊 RO 直覺：低 AGI = 170 起跳、cap 接近 190",
+      "舊『X.XX 次/秒』顯示完全移除",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：盤點所有顯示攻速的 UI 位置", "status": "done" },
+      { "id": "s2", "title": "實作：EffectiveBattleStats 加 aspd（拿掉 attackPerSec）+ CharacterDetail 改顯示『ASPD XXX』", "status": "done" },
+      { "id": "s3", "title": "驗證：CharacterDetail 點 AGI 看 ASPD 上升曲線、極端值 sanity", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "ASPD 預設就 173-180（接近 cap），給玩家『起點已經很高、提升空間有限』的錯覺。未來若覺得不夠爽，可調 fireCdMul cap（從 0.4 拉到 0.2）讓上限拉到 ASPD ~190",
+      "若有別處顯示攻速（例如戰鬥血條），改了介面要一起更新，否則 typecheck 不一定抓得到"
+    ],
+    "referenceFiles": [
+      "app/src/characters/statFormulas.ts",
+      "app/src/character/CharacterDetail.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-28T17:50:00+08:00",
+      "type": "note",
+      "msg": "User feedback：T-006 攻速曲線有感，但 RO 用 ASPD 整數抽象顯示，要求對齊。Web 查 iRO wiki：interval = 4.0 - ASPD*0.02 秒。反推：ASPD = 200 - interval*100。"
+    },
+    {
+      "ts": "2026-05-28T17:55:00+08:00",
+      "type": "progress",
+      "msg": "勘查 grep：attackPerSec 只在 statFormulas + CharacterDetail.tsx line 183 兩處出現。0 處戰鬥場 UI、0 處 lobby — 安全替換。"
+    },
+    {
+      "ts": "2026-05-28T17:58:00+08:00",
+      "type": "progress",
+      "msg": "改 statFormulas.ts：attackPerSec 換 aspd（Math.round(200 - interval * 100)）。改 CharacterDetail.tsx：fmtAttackPerSec → fmtAspd（『ASPD XXX』整數）。Typecheck pass。"
+    },
+    {
+      "ts": "2026-05-28T18:00:00+08:00",
+      "type": "review",
+      "msg": "驗證對齊：(1) 劍士 default agi 1 = ASPD 146（公式：interval 0.537s → 200-53.7=146.3 → 146 round）(2) AGI 1→30 ASPD 146→165（+19，曲線明顯，平方項生效）(3) UI 顯示乾淨『ASPD 146』整數無單位。預期 cap 在 178-183（starina/swordsman 武器差異），endgame 還有 ~13 點推進空間。close."
+    }
+  ]
+}

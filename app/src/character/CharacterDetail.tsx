@@ -70,7 +70,7 @@ export const CharacterDetail = () => {
   const xpCap = progress.level >= LEVEL_CAP ? xpMax(LEVEL_CAP) : xpMax(progress.level);
   const xpPct = progress.level >= LEVEL_CAP ? 100 : Math.min(100, (progress.xp / xpCap) * 100);
 
-  const fmtAttackPerSec = (aps: number) => `${aps.toFixed(2)} 次/秒`;
+  const fmtAspd = (aspd: number) => `ASPD ${aspd}`;
   const fmtCritPct = (crit: number) => `${(crit * 100).toFixed(1)}%`;
 
   const onUse = (n: number) => {
@@ -180,7 +180,7 @@ export const CharacterDetail = () => {
           </div>
           <div className={styles.derivedRow}>
             <span className={styles.derivedLabel}>攻速</span>
-            <span className={styles.derivedValue}>{fmtAttackPerSec(eff.attackPerSec)}</span>
+            <span className={styles.derivedValue}>{fmtAspd(eff.aspd)}</span>
           </div>
           <div className={styles.derivedRow}>
             <span className={styles.derivedLabel}>暴擊率</span>
