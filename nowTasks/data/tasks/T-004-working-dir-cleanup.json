@@ -5,10 +5,11 @@
   "ticket": null,
   "branch": null,
   "worktree": null,
-  "status": "active",
+  "status": "done",
   "owner": "claude",
   "createdAt": "2026-05-25T17:44:44+08:00",
-  "updatedAt": "2026-05-25T17:44:44+08:00",
+  "updatedAt": "2026-05-28T16:05:00+08:00",
+  "mergedAt": "2026-05-28T16:05:00+08:00",
   "dependencies": [],
   "plan": {
     "goal": "工作區回到乾淨狀態 — 那 80+ 個 git 還追蹤但已刪除的舊素材（lobby-starina cutout / blessings PNG / hero PNG 等）正式從版本控制移除，新增雜檔分流處理。",
@@ -28,13 +29,13 @@
       "typecheck 通過 + dev server 跑得起來，沒有破圖"
     ],
     "steps": [
-      { "id": "s1", "title": "勘查：盤點 git status 全部變更，分四類（刪 / 留 / 搬 archive / 不確定 → 問）", "status": "todo" },
-      { "id": "s2", "title": "實作：依分類處理 — 該移除的從 git 移除、該留的 git add、該搬的 mv 到 archive", "status": "todo" },
-      { "id": "s3", "title": "驗證：typecheck 通過 + dev server 跑一輪確認沒破圖 + commit", "status": "todo" }
+      { "id": "s1", "title": "勘查：盤點 git status 全部變更，分四類（刪 / 留 / 搬 archive / 不確定 → 問）", "status": "done" },
+      { "id": "s2", "title": "實作：依分類處理 — 該移除的從 git 移除、該留的 git add、該搬的 mv 到 archive", "status": "done" },
+      { "id": "s3", "title": "驗證：typecheck 通過 + dev server 跑一輪確認沒破圖 + commit", "status": "done" }
     ],
     "openQuestions": [
-      "Q1：ch2_cg.png 是 chapter 2 CG 素材嗎？要留在 root 還是搬去 res_for_use 之類的暫存區？",
-      "Q2：app/archive/沒用到的圖/ 是誰加的、預期用途？要正式 archive 還是直接刪？"
+      "[已解 @ 2026-05-28] Q1：ch2_cg.png 對齊 ch1_cg.png 處理 — 兩個都 2.5MB 的 root-level CG 素材、src 無引用，直接 commit 進 repo。",
+      "[已解 @ 2026-05-28] Q2：app/archive/沒用到的圖/ (18MB / 68 files) 跟剛 rm 的 87 個檔案大幅重疊（user 早期手動 archive 未 commit）。git history 已保留，本地 folder 多餘。決議走 gitignore：加進 .gitignore 保留本地當素材夾、git 不再追蹤。Non-destructive。"
     ],
     "estimatedSize": "S",
     "riskNotes": [
@@ -54,6 +55,31 @@
       "ts": "2026-05-25T17:44:44+08:00",
       "type": "note",
       "msg": "task 開立。housekeeping 性質，跟劍士並行不衝突。"
+    },
+    {
+      "ts": "2026-05-28T15:55:00+08:00",
+      "type": "progress",
+      "msg": "領單。git status 盤點：87 個 deletion + 2 個 untracked（ch2_cg.png、app/archive/沒用到的圖/）。87 個 deletion 分類：blessings (8) / lobby-starina-cutout (54) / lobby-starina PNG (12) / lobby- 其他 (4) / generated-lobby (2) / hero PNG (5) / img_order/008 SPEC (1)。"
+    },
+    {
+      "ts": "2026-05-28T15:58:00+08:00",
+      "type": "progress",
+      "msg": "Preflight grep src/ 確認 87 個 deletion 全部 0 引用。安全 batch git add -u + commit (bae5cee)。Typecheck pass + vstd dev 200。"
+    },
+    {
+      "ts": "2026-05-28T16:00:00+08:00",
+      "type": "decision",
+      "msg": "Q1 ch2_cg.png 對齊 ch1 處理：commit 進 repo (b4c47e8)。"
+    },
+    {
+      "ts": "2026-05-28T16:03:00+08:00",
+      "type": "decision",
+      "msg": "Q2 archive folder：走 gitignore 路線 (7e12b7a)。理由：(1) 內容 git history 已保留 (2) 是 user 個人本地組織 (3) 非破壞性 (4) 保 git status 乾淨。"
+    },
+    {
+      "ts": "2026-05-28T16:05:00+08:00",
+      "type": "review",
+      "msg": "結論：git status 0 entries 完全乾淨。4 個 commit 處理掉 89 個 working dir 變更。Typecheck + dev server 全綠。done。"
     }
   ]
 }
