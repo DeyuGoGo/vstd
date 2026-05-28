@@ -51,6 +51,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       unspentPoints: 0,
       stats: { ...CHARACTERS.starina.startingStats },
     },
+    swordsman: {
+      level: 1,
+      xp: 0,
+      unspentPoints: 0,
+      stats: { ...CHARACTERS.swordsman.startingStats },
+    },
   },
   lineup: Array.from({ length: LINEUP_SIZE }, () => null) as (string | null)[],
 
