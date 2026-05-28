@@ -1,0 +1,65 @@
+{
+  "id": "T-005-default-lv30-with-unspent-points",
+  "number": "T-005",
+  "title": "兩隻角色 default Lv30 + 留素質點待點（戰鬥手感實驗用）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-28T16:55:00+08:00",
+  "updatedAt": "2026-05-28T17:05:00+08:00",
+  "mergedAt": "2026-05-28T17:05:00+08:00",
+  "dependencies": [],
+  "plan": {
+    "goal": "玩家進遊戲後星奈跟劍士都已經是 Lv30，各自有 87 點素質點待分配，方便在 CharacterDetail 調素質、進戰鬥試手感。",
+    "boundaryConditions": [
+      "只改 usePlayerStore 初始 seed，不動 startingStats、不動 level-up 公式、不動 stat formula 公式",
+      "兩隻角色都套同樣的處理（保持對比公平）",
+      "此單純粹是 dev 體驗種子，不算 production 行為；之後要實作『取得角色』流程時再回頭調"
+    ],
+    "preflightChecks": [
+      "確認 STAT_POINTS_PER_LEVEL × (30-1) = 87 點 unspent 是否與 useExpItem 的累加邏輯一致",
+      "確認 CharacterDetail 有顯示 unspent points 並可分配（之前 T-001 驗證過）",
+      "確認 LEVEL_CAP = 50 容得下 Lv30"
+    ],
+    "expectedDeliverables": [
+      "玩家進遊戲：星奈卡片顯示 Lv.30、劍士卡片顯示 Lv.30",
+      "點任一角色進 CharacterDetail：可點素質 + 號分配 87 點",
+      "戰鬥能力預覽會跟著素質點變動更新 HP / 暴擊 / 傷害"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：確認 seed 結構 + 公式累加數正確", "status": "done" },
+      { "id": "s2", "title": "實作：改 usePlayerStore 初始 starina / swordsman 為 lv30 + unspentPoints 87", "status": "done" },
+      { "id": "s3", "title": "驗證：dev server 看 Roster lv 顯示 + CharacterDetail 點素質 + 戰鬥預覽更新", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "如果有 zustand persist middleware（localStorage），舊存檔會蓋掉新 seed → 要 user 清 localStorage 才看得到新 Lv30 預設",
+      "之後要做『取得角色』時，這段 seed 要拆掉或改寫"
+    ],
+    "referenceFiles": [
+      "app/src/stores/usePlayerStore.ts",
+      "app/src/characters/statFormulas.ts"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-28T16:55:00+08:00",
+      "type": "note",
+      "msg": "task 開立。前情：T-001~T-004 done，user 接下來要深度挖戰鬥快感，要先讓兩隻角色都能在 Lv30 + 87 點待點狀態快速調素質試手感。"
+    },
+    {
+      "ts": "2026-05-28T17:00:00+08:00",
+      "type": "progress",
+      "msg": "改 usePlayerStore 初始 seed：starina/swordsman 都從 lv1/unspent0 改成 lv30/unspent87，加 dev-seed 註解標記未來要換 acquisition flow。Typecheck pass。"
+    },
+    {
+      "ts": "2026-05-28T17:05:00+08:00",
+      "type": "review",
+      "msg": "驗證全綠：(1) Roster 兩張卡都顯示 Lv.30 + 『未分配』徽章 (2) 進 CharacterDetail 看到『剩餘點數：87』 (3) 點 STR + 號 → 傷害區間 97-147 → 98-148 即時更新，allocation 公式正確 (dmgMin/Max formula 有 + stats.str)。close."
+    }
+  ]
+}

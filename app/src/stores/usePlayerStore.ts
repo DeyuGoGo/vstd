@@ -44,17 +44,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   notifications: { adventure: true },
   nav: { activeTab: 'home' },
   selectedCharacterId: DEFAULT_CHARACTER_ID,
+  // Dev seed: both characters start at Lv30 with all 29×3 = 87 stat
+  // points unspent, so player can immediately tune stats and probe
+  // combat feel. Replace with proper acquisition flow when that lands.
   characters: {
     starina: {
-      level: 1,
+      level: 30,
       xp: 0,
-      unspentPoints: 0,
+      unspentPoints: 87,
       stats: { ...CHARACTERS.starina.startingStats },
     },
     swordsman: {
-      level: 1,
+      level: 30,
       xp: 0,
-      unspentPoints: 0,
+      unspentPoints: 87,
       stats: { ...CHARACTERS.swordsman.startingStats },
     },
   },
