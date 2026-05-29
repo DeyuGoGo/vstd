@@ -1,0 +1,74 @@
+{
+  "id": "T-017-atk-type-physical-magical",
+  "number": "T-017",
+  "title": "角色攻擊類型分流 — 物理職只吃 pAtk、法師只吃 mAtk",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-29T18:50:00+08:00",
+  "updatedAt": "2026-05-29T19:05:00+08:00",
+  "mergedAt": "2026-05-29T19:05:00+08:00",
+  "dependencies": ["T-008-atk-matk-score-job-axes"],
+  "plan": {
+    "goal": "劍士（物理職）點 INT 不再增加傷害；法師（星奈）點 STR 不再增加傷害。每個角色有攻擊類型，傷害只吃對應的攻擊力軸。CharacterDetail 只顯示該角色適用的攻擊欄。",
+    "boundaryConditions": [
+      "修 T-008 遺留：dmgBonus = pAtk + mAtk 對所有角色加總兩軸的錯誤",
+      "star = 法師 magical、swordsman = 劍士 physical",
+      "pAtk / mAtk 兩個 score 仍照常計算（未來混合傷害保留），只是 dmgBonus 取對應軸",
+      "CharacterDetail 依攻擊類型只顯示適用欄（物理職顯示 ATK、法師顯示 MATK），避免玩家疑惑"
+    ],
+    "preflightChecks": [
+      "確認 atkType 放哪最乾淨（CharacterBaseStats 已被 computeEffectiveBattleStats 接收，加此處不需改簽名）",
+      "確認 starina 定位（INT/AGI 法手 → magical）、swordsman 定位（STR 物理 → physical）",
+      "確認 CharacterDetail 取得 atkType 的路徑（charBase.baseStats.atkType）"
+    ],
+    "expectedDeliverables": [
+      "劍士點 INT → 傷害區間不變（MATK 不計入傷害）",
+      "劍士點 STR → 傷害區間照常上升",
+      "星奈點 STR → 傷害區間不變（PATK 不計入傷害）",
+      "星奈點 INT → 傷害區間照常上升",
+      "CharacterDetail 物理職只顯示『物攻 ATK』、法師只顯示『法攻 MATK』",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "types.ts CharacterBaseStats 加 atkType 欄位", "status": "done" },
+      { "id": "s2", "title": "starina = magical、swordsman = physical", "status": "done" },
+      { "id": "s3", "title": "statFormulas dmgBonus 依 atkType 取 pAtk 或 mAtk", "status": "done" },
+      { "id": "s4", "title": "CharacterDetail 依 atkType 只顯示適用攻擊欄", "status": "done" },
+      { "id": "s5", "title": "驗證：劍士點 INT 傷害不變、星奈點 STR 傷害不變", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "未來混合傷害角色（半物理半法）需要更細的 dmg 拆分 — 此單 atkType 是 binary，先夠用",
+      "若有別處（戰鬥內）也用 dmgMin/Max，已確認 Battle.tsx 只 roll dmgMin~dmgMax，不重算 bonus，所以改 statFormulas 即全域生效"
+    ],
+    "referenceFiles": [
+      "app/src/characters/types.ts",
+      "app/src/characters/starina.ts",
+      "app/src/characters/swordsman.ts",
+      "app/src/characters/statFormulas.ts",
+      "app/src/character/CharacterDetail.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-29T18:50:00+08:00",
+      "type": "note",
+      "msg": "User 反饋：劍士增加 INT 不應該增加傷害。根因 T-008 dmgBonus = pAtk + mAtk 對所有角色加總。修法：加 atkType（physical/magical），傷害只吃對應軸。"
+    },
+    {
+      "ts": "2026-05-29T19:00:00+08:00",
+      "type": "progress",
+      "msg": "實作：(1) types.ts 新 AttackType union + CharacterBaseStats.atkType 欄位 (2) starina = magical、swordsman = physical (3) statFormulas dmgBonus = base.atkType === 'magical' ? mAtk : pAtk（pAtk/mAtk 兩 score 仍算）(4) CharacterDetail 條件渲染：magical 顯示 MATK、physical 顯示 ATK。typecheck pass。"
+    },
+    {
+      "ts": "2026-05-29T19:05:00+08:00",
+      "type": "review",
+      "msg": "實機驗證全綠：劍士（physical）只顯示『物攻 ATK』、INT 1→11 傷害 95-145 不變、STR 3→13 傷害 95-145→106-156 漲。星奈（magical）只顯示『法攻 MATK』、STR 1→11 傷害 66-106 不變、INT 3→13 傷害 66-106→87-127 漲。職業攻擊分流正確。close."
+    }
+  ]
+}

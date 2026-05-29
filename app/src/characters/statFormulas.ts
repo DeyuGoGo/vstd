@@ -104,8 +104,9 @@ export function computeEffectiveBattleStats(
   const mAtk = magicalAtk(stats);
   const defReduction = physicalDefense(stats);
   const hpRegenPerSec = hpRegen(stats);
-  // dmg roll 暫採 pAtk + mAtk 加總（戰鬥內單一普攻）。未來實作職業 + 技能時拆軌。
-  const dmgBonus = pAtk + mAtk;
+  // dmg 只吃對應攻擊類型的軸：物理職吃 pAtk、法師吃 mAtk。
+  // 兩個 score 仍照常計算（CharacterDetail 顯示 + 未來混合傷害保留）。
+  const dmgBonus = base.atkType === 'magical' ? mAtk : pAtk;
 
   return {
     hpMax: base.hpBase + stats.vit * 30,

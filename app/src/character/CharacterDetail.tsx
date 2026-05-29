@@ -194,14 +194,17 @@ export const CharacterDetail = () => {
             <span className={styles.derivedLabel}>回血</span>
             <span className={styles.derivedValue}>{eff.hpRegenPerSec.toFixed(1)} /秒</span>
           </div>
-          <div className={styles.derivedRow}>
-            <span className={styles.derivedLabel}>物攻</span>
-            <span className={styles.derivedValue}>ATK {eff.pAtk}</span>
-          </div>
-          <div className={styles.derivedRow}>
-            <span className={styles.derivedLabel}>法攻</span>
-            <span className={styles.derivedValue}>MATK {eff.mAtk}</span>
-          </div>
+          {charBase.baseStats.atkType === 'magical' ? (
+            <div className={styles.derivedRow}>
+              <span className={styles.derivedLabel}>法攻</span>
+              <span className={styles.derivedValue}>MATK {eff.mAtk}</span>
+            </div>
+          ) : (
+            <div className={styles.derivedRow}>
+              <span className={styles.derivedLabel}>物攻</span>
+              <span className={styles.derivedValue}>ATK {eff.pAtk}</span>
+            </div>
+          )}
           <div className={styles.derivedRow}>
             <span className={styles.derivedLabel}>傷害區間</span>
             <span className={styles.derivedValue}>

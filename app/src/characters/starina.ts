@@ -13,6 +13,7 @@ export const starina: CharacterBaseConfig = {
     critBase: 0.18,
     dmgMinBase: 60,
     dmgMaxBase: 100,
+    atkType: 'magical',  // 法師 — 傷害吃 INT 軸 (mAtk)
   },
   startingStats: {
     str: 1,

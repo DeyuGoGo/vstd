@@ -28,6 +28,11 @@ export interface CharacterAssets {
   lobbyVideo: string;
 }
 
+// 攻擊類型決定傷害吃哪條攻擊力軸：
+//   physical → pAtk（STR/DEX/LUK 軸）；magical → mAtk（INT 軸）
+// 物理職點 INT、法師點 STR 都不會增加傷害。
+export type AttackType = 'physical' | 'magical';
+
 export interface CharacterBaseStats {
   hpBase: number;
   attackRange: number;
@@ -37,6 +42,7 @@ export interface CharacterBaseStats {
   critBase: number;
   dmgMinBase: number;
   dmgMaxBase: number;
+  atkType: AttackType;
 }
 
 export interface CharacterBaseConfig {

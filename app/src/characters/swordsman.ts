@@ -19,6 +19,7 @@ export const swordsman: CharacterBaseConfig = {
     critBase: 0.15,       // 比星奈 (0.18) 略低
     dmgMinBase: 90,       // 單擊高傷
     dmgMaxBase: 140,
+    atkType: 'physical',  // 劍士 — 傷害吃 STR/DEX/LUK 軸 (pAtk)
   },
   startingStats: {
     str: 3,   // 主屬性
