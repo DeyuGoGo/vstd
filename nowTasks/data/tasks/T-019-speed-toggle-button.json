@@ -1,0 +1,68 @@
+{
+  "id": "T-019-speed-toggle-button",
+  "number": "T-019",
+  "title": "戰鬥倍速切換按鈕 1X / 2X / 3X 循環",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-29T19:45:00+08:00",
+  "updatedAt": "2026-05-29T19:55:00+08:00",
+  "mergedAt": "2026-05-29T19:55:00+08:00",
+  "dependencies": ["T-014-battle-2x-speed"],
+  "plan": {
+    "goal": "戰鬥場頂部有倍速按鈕，點一下循環 1X → 2X → 3X → 回 1X，即時改變戰鬥節奏。取代 T-014 寫死的 2X 常數。",
+    "boundaryConditions": [
+      "倍速循環順序：1X → 2X → 3X → 1X（恢復）",
+      "初始 1X（玩家自己按到想要的速度）",
+      "改速度不重啟 game loop（用 ref 給 loop 讀，state 給 UI 顯示）",
+      "按鈕放 TopBar，跟 pause 同一排"
+    ],
+    "preflightChecks": [
+      "確認 T-014 的 TIME_SCALE 常數位置 + game loop dt 乘法處",
+      "確認 game loop useEffect 依賴陣列（避免 speed state 進去造成重啟）",
+      "確認 TopBar 版面可塞倍速按鈕（pause 左、gold 右、中間空）"
+    ],
+    "expectedDeliverables": [
+      "戰鬥頂部出現倍速按鈕，顯示當前倍速（如『2X』）",
+      "點一下循環 1X → 2X → 3X → 1X",
+      "戰鬥節奏即時跟著倍速變（怪物 / 攻速 / spawn / regen 全部）",
+      "切倍速不會讓畫面頓一下或重啟",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "Battle.tsx：TIME_SCALE 常數改 state + ref，cycleSpeed 1→2→3→1，loop 讀 ref", "status": "done" },
+      { "id": "s2", "title": "TopBar：加 speedScale + onCycleSpeed props + 倍速按鈕", "status": "done" },
+      { "id": "s3", "title": "驗證：按鈕循環 + 節奏即時變 + typecheck", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "若 loop 讀 state 而非 ref，改速度會進依賴陣列重啟 loop、reset lastTs → 用 ref 避免",
+      "初始 1X 可能讓習慣 T-014 2X 的玩家覺得變慢 — 但有按鈕可調，且符合 user 描述的『按一下到 2X』"
+    ],
+    "referenceFiles": [
+      "app/src/battle/Battle.tsx",
+      "app/src/battle/components/TopBar.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-29T19:45:00+08:00",
+      "type": "note",
+      "msg": "User：上面增加 2X 3X 倍速按鈕，按一下 2X 再按 3X 再按恢復。理解為循環 1X→2X→3X→1X，初始 1X。取代 T-014 寫死的 TIME_SCALE=2。用 ref 給 loop 讀避免重啟。"
+    },
+    {
+      "ts": "2026-05-29T19:52:00+08:00",
+      "type": "progress",
+      "msg": "實作：TIME_SCALE 常數 → SPEED_CYCLE [1,2,3]。Battle 加 speedScale state（按鈕顯示）+ speedScaleRef（loop 讀）+ cycleSpeed（indexOf 循環）。loop dt = rawDt × speedScaleRef.current。TopBar 加 speedScale + onCycleSpeed props + 倍速按鈕（>1 金底高亮、=1 暗色，顯示 NX）。typecheck pass。"
+    },
+    {
+      "ts": "2026-05-29T19:55:00+08:00",
+      "type": "review",
+      "msg": "驗證全綠：按鈕初始顯示 1X、連點循環 1X→2X→3X→1X→2X 正確、>1 時金底高亮（截圖確認 2X 狀態）。pause 按鈕右側並排。用 ref 不重啟 loop。close."
+    }
+  ]
+}

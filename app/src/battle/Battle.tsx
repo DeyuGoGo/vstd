@@ -35,9 +35,9 @@ const LINEUP_ANCHOR_Y = GAME_H - 165;
 // 防線 Y：怪物穿越此 Y → 進 attacking 狀態。城牆 sprite 視覺對齊此線。
 const HERO_COLLISION_Y = LINEUP_ANCHOR_Y - 60;
 
-// 戰鬥時間倍率：dt 乘上此值，加速所有 dt-based 邏輯（怪物 / 彈道 / 攻速 / spawn / regen / attacking）。
-// 比例不變，整體節奏倍速。未來可變成 store / setting 給玩家調。
-const TIME_SCALE = 2.0;
+// 戰鬥時間倍率循環：dt 乘上此值，加速所有 dt-based 邏輯（怪物 / 彈道 / 攻速 /
+// spawn / regen / attacking）。玩家用頂部按鈕切換，比例不變、整體節奏倍速。
+const SPEED_CYCLE = [1, 2, 3] as const;
 
 // Triangle formation: slot 0 front-center, slot 1 back-left, slot 2 back-right.
 const SLOT_OFFSETS: readonly { x: number; y: number }[] = [
@@ -131,6 +131,19 @@ export const Battle = () => {
   const [gold, setGold] = useState(0);
   const [kills, setKills] = useState(0);
   const [currentWaveIdx, setCurrentWaveIdx] = useState(0);
+
+  // Battle speed (1x/2x/3x). state drives the button label; ref is read by the
+  // game loop so cycling speed doesn't restart the loop / reset its timestamp.
+  const [speedScale, setSpeedScale] = useState<number>(SPEED_CYCLE[0]);
+  const speedScaleRef = useRef<number>(SPEED_CYCLE[0]);
+  const cycleSpeed = useCallback(() => {
+    setSpeedScale((prev) => {
+      const idx = SPEED_CYCLE.indexOf(prev as (typeof SPEED_CYCLE)[number]);
+      const next = SPEED_CYCLE[(idx + 1) % SPEED_CYCLE.length];
+      speedScaleRef.current = next;
+      return next;
+    });
+  }, []);
   const [waveKills, setWaveKills] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>('running');
 
@@ -288,7 +301,7 @@ export const Battle = () => {
     const loop = (ts: number) => {
       const s = stateRef.current;
       const rawDt = Math.min(0.05, (ts - (s.lastTs || ts)) / 1000);
-      const dt = rawDt * TIME_SCALE;
+      const dt = rawDt * speedScaleRef.current;
       s.lastTs = ts;
 
       const wave = WAVES[currentWaveIdx];
@@ -591,7 +604,7 @@ export const Battle = () => {
         }}
       />
 
-      <TopBar gold={gold} onPause={togglePause} />
+      <TopBar gold={gold} onPause={togglePause} speedScale={speedScale} onCycleSpeed={cycleSpeed} />
 
       {/* Team defense line HP bar — TD 防線血量 */}
       <div

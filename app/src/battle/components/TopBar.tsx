@@ -8,9 +8,11 @@ const GOLD = '#f5c95c';
 interface Props {
   gold: number;
   onPause: () => void;
+  speedScale: number;
+  onCycleSpeed: () => void;
 }
 
-export const TopBar = ({ gold, onPause }: Props) => {
+export const TopBar = ({ gold, onPause, speedScale, onCycleSpeed }: Props) => {
   return (
     <div
       style={{
@@ -26,25 +28,49 @@ export const TopBar = ({ gold, onPause }: Props) => {
         zIndex: Z.HUD,
       }}
     >
-      <button
-        onClick={onPause}
-        style={{
-          width: 42,
-          height: 42,
-          borderRadius: 12,
-          background: PANEL,
-          border: `1px solid ${PANEL_STROKE}`,
-          display: 'grid',
-          placeItems: 'center',
-          cursor: 'pointer',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-        }}
-        aria-label="暫停"
-      >
-        <PauseGlyph />
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button
+          onClick={onPause}
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            background: PANEL,
+            border: `1px solid ${PANEL_STROKE}`,
+            display: 'grid',
+            placeItems: 'center',
+            cursor: 'pointer',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          }}
+          aria-label="暫停"
+        >
+          <PauseGlyph />
+        </button>
+
+        <button
+          onClick={onCycleSpeed}
+          style={{
+            height: 42,
+            minWidth: 52,
+            padding: '0 14px',
+            borderRadius: 12,
+            background: speedScale > 1 ? GOLD : PANEL,
+            border: `1px solid ${speedScale > 1 ? GOLD : PANEL_STROKE}`,
+            color: speedScale > 1 ? '#1a0e2f' : GOLD,
+            font: '800 16px/1 Sora, sans-serif',
+            letterSpacing: 0.5,
+            cursor: 'pointer',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+          }}
+          aria-label={`戰鬥速度 ${speedScale} 倍，點擊切換`}
+        >
+          {speedScale}X
+        </button>
+      </div>
 
       <div
         style={{
