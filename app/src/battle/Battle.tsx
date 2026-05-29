@@ -35,6 +35,10 @@ const LINEUP_ANCHOR_Y = GAME_H - 165;
 // 防線 Y：怪物穿越此 Y → 進 attacking 狀態。城牆 sprite 視覺對齊此線。
 const HERO_COLLISION_Y = LINEUP_ANCHOR_Y - 60;
 
+// 戰鬥時間倍率：dt 乘上此值，加速所有 dt-based 邏輯（怪物 / 彈道 / 攻速 / spawn / regen / attacking）。
+// 比例不變，整體節奏倍速。未來可變成 store / setting 給玩家調。
+const TIME_SCALE = 2.0;
+
 // Triangle formation: slot 0 front-center, slot 1 back-left, slot 2 back-right.
 const SLOT_OFFSETS: readonly { x: number; y: number }[] = [
   { x: 0, y: 0 },
@@ -283,7 +287,8 @@ export const Battle = () => {
     let raf = 0;
     const loop = (ts: number) => {
       const s = stateRef.current;
-      const dt = Math.min(0.05, (ts - (s.lastTs || ts)) / 1000);
+      const rawDt = Math.min(0.05, (ts - (s.lastTs || ts)) / 1000);
+      const dt = rawDt * TIME_SCALE;
       s.lastTs = ts;
 
       const wave = WAVES[currentWaveIdx];
@@ -393,6 +398,28 @@ export const Battle = () => {
         if (anyAttackingThisTick) {
           triggerShake(shakeAmpThisTick);
           playSfx('hero_take_dmg');
+        }
+
+        // Attacking enemies push each other apart along X — pile-up looks like a
+        // crowd shoving the wall, not a single stacked sprite.
+        const SEP_THRESHOLD = 28;
+        const SEP_PUSH = 40;
+        const attackers = s.enemies.filter((e) => e.attacking && e.dyingT === 0);
+        for (let i = 0; i < attackers.length; i++) {
+          const a = attackers[i];
+          for (let j = i + 1; j < attackers.length; j++) {
+            const b = attackers[j];
+            const dx = a.x - b.x;
+            const absDx = Math.abs(dx);
+            if (absDx >= SEP_THRESHOLD) continue;
+            const dir = dx >= 0 ? 1 : -1;
+            const overlap = SEP_THRESHOLD - absDx;
+            const push = (overlap / SEP_THRESHOLD) * SEP_PUSH * dt;
+            a.x += dir * push;
+            b.x -= dir * push;
+          }
+          if (a.x < 30) a.x = 30;
+          if (a.x > GAME_W - 30) a.x = GAME_W - 30;
         }
 
         // projectiles
@@ -680,7 +707,7 @@ export const Battle = () => {
       />
 
       {paused && outcome === 'running' && (
-        <PauseOverlay onResume={resumeBattle} />
+        <PauseOverlay onResume={resumeBattle} onExit={exitToLobby} />
       )}
 
       {outcome === 'gameover' && (

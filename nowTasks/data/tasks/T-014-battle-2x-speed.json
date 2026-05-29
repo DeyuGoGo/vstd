@@ -1,0 +1,59 @@
+{
+  "id": "T-014-battle-2x-speed",
+  "number": "T-014",
+  "title": "戰鬥全局 2x 速度（節奏太慢）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-29T16:05:00+08:00",
+  "updatedAt": "2026-05-29T16:25:00+08:00",
+  "mergedAt": "2026-05-29T16:25:00+08:00",
+  "dependencies": [],
+  "plan": {
+    "goal": "戰鬥整體節奏加快 2 倍：怪物移動、彈道、攻擊冷卻、spawn 間隔、怪物 attacking、防線 regen — 所有 dt-based 邏輯一致提速 2x，比例平衡不變。",
+    "boundaryConditions": [
+      "只在 game loop 開頭乘 dt 常數 — 不調個別數值",
+      "保持比例平衡（不重做 base stats）",
+      "未來想做『戰鬥速度調節 UI』時此常數變成 store / setting"
+    ],
+    "preflightChecks": [
+      "確認 game loop dt 來源在 line 286 `(ts - lastTs) / 1000`",
+      "確認所有 tick 段都用 dt 沒 hardcode 時間（grep ms / setTimeout 內 loop）"
+    ],
+    "expectedDeliverables": [
+      "戰鬥場怪物移動明顯變快（2x 之前）",
+      "角色攻擊冷卻變快（dmg 速率 2x）",
+      "怪物 spawn 間隔變短（2x）",
+      "防線 regen 速率 2x（teamHp 回血速度跟著快）",
+      "怪物到牆每秒攻擊頻率變 2 次 / 秒（從 1 次 / 秒）",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "加 TIME_SCALE 常數 + 乘 dt", "status": "done" },
+      { "id": "s2", "title": "驗證：grep 確認沒漏 dt-bypass 的時間 logic", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "若有 setInterval / setTimeout 不走 dt，會慢半拍 — preflight grep 確認"
+    ],
+    "referenceFiles": [
+      "app/src/battle/Battle.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-29T16:05:00+08:00",
+      "type": "note",
+      "msg": "User 反饋：節奏太慢，要 2x 速度。最簡單方案：game loop dt 乘 TIME_SCALE 常數，整局加速、比例不變。"
+    },
+    {
+      "ts": "2026-05-29T16:25:00+08:00",
+      "type": "review",
+      "msg": "實作：top-level const TIME_SCALE = 2.0；tick line 286 把 rawDt 乘 TIME_SCALE 變成 dt。所有 dt-based 邏輯（移動 / spawn / 攻擊冷卻 / regen / attacking interval）一致提速。驗證：戰局放著跑到 WAVE 11/20，相比舊 1x 速度同時間只到 ~5-6 wave，加速生效。"
+    }
+  ]
+}

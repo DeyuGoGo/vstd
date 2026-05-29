@@ -1,0 +1,59 @@
+{
+  "id": "T-013-battle-exit-button",
+  "number": "T-013",
+  "title": "戰鬥場可退出 — PauseOverlay 加離開戰鬥按鈕",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-29T16:05:00+08:00",
+  "updatedAt": "2026-05-29T16:25:00+08:00",
+  "mergedAt": "2026-05-29T16:25:00+08:00",
+  "dependencies": [],
+  "plan": {
+    "goal": "玩家暫停戰鬥後能直接離開回 lobby，不必等戰敗或勝利。視為放棄該場戰鬥，獎勵不結算。",
+    "boundaryConditions": [
+      "只動 PauseOverlay 元件 + Battle 接線",
+      "離開 = 直接 setScene('lobby')，gold / xp 不結算（簡單路線）",
+      "不加確認對話框（暫停本身已是 friction）"
+    ],
+    "preflightChecks": [
+      "確認 PauseOverlay 現有結構（click-anywhere-to-resume）",
+      "確認 Battle.tsx 已有 exitToLobby helper（setScene + playSfx）"
+    ],
+    "expectedDeliverables": [
+      "暫停畫面有兩個明確按鈕：繼續、離開戰鬥",
+      "點離開戰鬥 → 直接回 lobby",
+      "獎勵不結算（無 gold 增加）",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "改 PauseOverlay：加 onExit prop + 兩按鈕版面", "status": "done" },
+      { "id": "s2", "title": "Battle.tsx render PauseOverlay 傳入 onExit={exitToLobby}", "status": "done" },
+      { "id": "s3", "title": "視覺驗證 + typecheck", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "未來若加結算扣除（放棄 = 扣 stamina）要改此處邏輯"
+    ],
+    "referenceFiles": [
+      "app/src/battle/components/PauseOverlay.tsx",
+      "app/src/battle/Battle.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-29T16:05:00+08:00",
+      "type": "note",
+      "msg": "User 反饋：戰鬥應該要能退出。設計：暫停畫面加離開按鈕，不結算獎勵的快速路徑。"
+    },
+    {
+      "ts": "2026-05-29T16:25:00+08:00",
+      "type": "review",
+      "msg": "PauseOverlay 重寫：移除 click-anywhere-to-resume，改成兩個明確按鈕『繼續戰鬥』（金色強調）+『離開戰鬥』（panel 風格次要）+ 提示『放棄戰鬥不結算獎勵』。Battle.tsx 渲染傳 onExit={exitToLobby}。視覺驗證：pause 文字 + 兩按鈕 + hint 全顯示。close."
+    }
+  ]
+}

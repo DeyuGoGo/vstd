@@ -1,0 +1,60 @@
+{
+  "id": "T-015-attacking-enemy-separation",
+  "number": "T-015",
+  "title": "怪物攻擊牆面時不要疊在一起（X 軸分散）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-29T16:05:00+08:00",
+  "updatedAt": "2026-05-29T16:25:00+08:00",
+  "mergedAt": "2026-05-29T16:25:00+08:00",
+  "dependencies": ["T-010-defense-line-shared-hp"],
+  "plan": {
+    "goal": "多隻怪物攻擊防線時不要疊在同一 X 位置 — 視覺上像一群怪在牆前推擠、不是堆成一團。每秒輕微互推使其分散。",
+    "boundaryConditions": [
+      "只動 attacking 怪物的 X 位置 — Y 仍鎖在 heroCollisionY",
+      "不引入空間索引 / quadtree — attacking 怪物量級小（10-50 隻），O(n²) 可接受",
+      "推開速度小（每幀微調），不要看起來像彈跳"
+    ],
+    "preflightChecks": [
+      "確認 attacking 怪物 e.attacking=true + e.y=heroCollisionY，e.x 不再被改動",
+      "確認 GAME_W 範圍（怪物不能被推出畫面邊界）",
+      "決定 separation 距離閾值 + 推力大小"
+    ],
+    "expectedDeliverables": [
+      "多隻怪物到牆 → X 位置自然分散，不疊圖",
+      "推擠視覺平滑（不彈跳 / 不抖動）",
+      "怪物不會被推出畫面邊界（x 0~GAME_W）",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查 + 設計分散公式（threshold + push 強度）", "status": "done" },
+      { "id": "s2", "title": "實作 enemy tick 中 attacking 怪物之間 separation", "status": "done" },
+      { "id": "s3", "title": "視覺驗證", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "若怪物數量爆炸（>100）O(n²) 會吃 CPU — 此單先不處理，但記成後續優化候選",
+      "推力過大會抖動 — threshold 28px / push velocity ~40px/s 為起點"
+    ],
+    "referenceFiles": [
+      "app/src/battle/Battle.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-29T16:05:00+08:00",
+      "type": "note",
+      "msg": "User 反饋：怪物擋牆視覺像疊在一起，不像被擋住推擠。設計：attacking 怪物之間做 O(n²) separation force（threshold 28px、push 40px/s）。"
+    },
+    {
+      "ts": "2026-05-29T16:25:00+08:00",
+      "type": "review",
+      "msg": "實作：tick 內 enemies 處理完後，filter 出 attacking 怪物，O(n²) 兩兩比較 dx。距離 < SEP_THRESHOLD (28) 時依 overlap 比例給 lateral push (SEP_PUSH 40 × dt)。Clamp x 在 [30, GAME_W-30]。驗證視覺：WAVE 11 截圖看到牆前 minion 左右分散、沒疊在同一 X。close."
+    }
+  ]
+}
