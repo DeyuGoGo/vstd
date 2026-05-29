@@ -1,0 +1,81 @@
+{
+  "id": "T-012-defense-wall-sprite",
+  "number": "T-012",
+  "title": "防線城牆 sprite — 視覺指示界線（用 Codex imagegen 產圖）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "done",
+  "owner": "claude",
+  "createdAt": "2026-05-28T20:25:00+08:00",
+  "updatedAt": "2026-05-29T15:55:00+08:00",
+  "mergedAt": "2026-05-29T15:55:00+08:00",
+  "dependencies": ["T-010-defense-line-shared-hp"],
+  "plan": {
+    "goal": "戰鬥場底部有一條視覺城牆，指示 heroCollisionY 攻擊線位置。玩家直觀知道『怪物到這條線就會持續攻擊我們』。風格對齊現有 arena-bg（深色石頭 + 紫色 rune）。",
+    "boundaryConditions": [
+      "只動戰鬥場視覺層 — 不影響碰撞邏輯（heroCollisionY 已存在）",
+      "城牆是 cosmetic 圖層，沒 HP（teamHp 才是真實 HP）",
+      "用 Codex imagegen skill 產圖，不外包美術",
+      "圖風格對齊 arena-bg.png（深色 + 紫色 magic rune），透明背景 PNG"
+    ],
+    "preflightChecks": [
+      "確認 GAME_W / 戰鬥場渲染尺寸（看 SCENE_DIMS）",
+      "確認 LINEUP_ANCHOR_Y - 60 是 heroCollisionY，城牆要對齊此線",
+      "確認哪一層 z-index 適合放城牆（不能蓋住角色或彈道）"
+    ],
+    "expectedDeliverables": [
+      "新素材 app/public/img/defense-wall.png（透明背景、橫向長條、深色石頭風格）",
+      "戰鬥場 heroCollisionY 線上出現城牆視覺",
+      "城牆不蓋住角色 sprite（z-index 介於背景 + 角色之間）",
+      "城牆寬度貼合 GAME_W，左右不留奇怪空白",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查：SCENE_DIMS、LINEUP_ANCHOR_Y、z-index 排序", "status": "done" },
+      { "id": "s2", "title": "產圖：用 Codex imagegen 產 defense-wall.png（橫向長條石牆，深色 + 紫 rune）", "status": "done" },
+      { "id": "s3", "title": "實作：Battle.tsx 加 wall img 在 heroCollisionY 位置，調 z-index", "status": "done" },
+      { "id": "s4", "title": "驗證：戰鬥場視覺對齊 — 城牆在線上、角色在牆後、怪物穿牆 = attacking", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "Codex imagegen 出來的圖可能風格不對，要 1-2 輪 prompt 調整",
+      "城牆高度太高會擋住角色 sprite — 控制在 ~40-60px 高",
+      "未來城牆要顯示 HP / 損壞狀態時，這個 sprite 設計要支援『多段損壞圖』"
+    ],
+    "referenceFiles": [
+      "app/src/battle/Battle.tsx",
+      "app/public/img/arena-bg.png",
+      "app/src/battle/zIndex.ts"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-28T20:25:00+08:00",
+      "type": "note",
+      "msg": "User 反饋：底下需要城牆示意界線。缺圖素 → 用 Codex imagegen 產圖。風格對齊 arena-bg 深色石頭 + 紫色 rune。"
+    },
+    {
+      "ts": "2026-05-29T15:40:00+08:00",
+      "type": "progress",
+      "msg": "Preflight：SCENE_DIMS.battle = 640×960、LINEUP_ANCHOR_Y = 795、heroCollisionY = 735。z-index 排序：bg=0、HERO=10。城牆放 z=5（背景之上、角色之下）。"
+    },
+    {
+      "ts": "2026-05-29T15:48:00+08:00",
+      "type": "progress",
+      "msg": "Codex imagegen 成功產出 defense-wall.png：1280×80 RGBA、alpha bbox (0,3,1280,77) 上下透明、174KB。風格：黑灰石磚牆 + 不規則上緣 + 紫色 rune 零星發光 + 透明背景。完全符合 prompt。"
+    },
+    {
+      "ts": "2026-05-29T15:53:00+08:00",
+      "type": "progress",
+      "msg": "實作：(1) Battle.tsx top-level 新增 HERO_COLLISION_Y 常數（取代原本只在 tick 內 local 的 heroCollisionY）讓 JSX 也能用 (2) <img> 放在 vignette 後、TopBar 前，pos: top=HERO_COLLISION_Y-18 (中心對齊線)、寬 GAME_W、高 40、zIndex 5、pointerEvents none。typecheck pass。"
+    },
+    {
+      "ts": "2026-05-29T15:55:00+08:00",
+      "type": "review",
+      "msg": "視覺驗證 PASS：城牆橫亙戰場攻擊線、紫色 rune 點綴、劍士站在牆後當守衛、防線血條 3,890/3,890 在頂、HUD 完整。視覺敘事『角色守衛防線』一目了然。close."
+    }
+  ]
+}

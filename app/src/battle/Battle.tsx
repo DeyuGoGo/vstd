@@ -32,6 +32,8 @@ const GAME_W = SCENE_DIMS.battle.w;
 const GAME_H = SCENE_DIMS.battle.h;
 const LINEUP_ANCHOR_X = GAME_W / 2;
 const LINEUP_ANCHOR_Y = GAME_H - 165;
+// 防線 Y：怪物穿越此 Y → 進 attacking 狀態。城牆 sprite 視覺對齊此線。
+const HERO_COLLISION_Y = LINEUP_ANCHOR_Y - 60;
 
 // Triangle formation: slot 0 front-center, slot 1 back-left, slot 2 back-right.
 const SLOT_OFFSETS: readonly { x: number; y: number }[] = [
@@ -347,7 +349,7 @@ export const Battle = () => {
 
         // move enemies — on reaching the defense line, they stop and keep attacking
         // the shared team HP pool (TD 防線 mechanic).
-        const heroCollisionY = LINEUP_ANCHOR_Y - 60;
+        const heroCollisionY = HERO_COLLISION_Y;
         const ENEMY_ATTACK_INTERVAL = 1.0;  // seconds between attacks
         let teamDmgThisTick = 0;
         let shakeAmpThisTick = 0;
@@ -565,6 +567,22 @@ export const Battle = () => {
     <div ref={wrapRef} className={styles.battle}>
       <img src={`${import.meta.env.BASE_URL}img/arena-bg.png`} alt="" className={styles.bg} />
       <div className={styles.vignette} />
+
+      {/* 防線城牆 — 視覺指示 heroCollisionY 攻擊線 */}
+      <img
+        src={`${import.meta.env.BASE_URL}img/defense-wall.png`}
+        alt=""
+        style={{
+          position: 'absolute',
+          top: HERO_COLLISION_Y - 18,
+          left: 0,
+          width: GAME_W,
+          height: 40,
+          zIndex: 5,
+          pointerEvents: 'none',
+          imageRendering: 'crisp-edges',
+        }}
+      />
 
       <TopBar gold={gold} onPause={togglePause} />
 
