@@ -352,18 +352,15 @@ export const Battle = () => {
           }
         }
 
-        // move enemies — on reaching the defense line (or piling up behind enemies
-        // already at it), they stop and keep attacking the shared team HP pool.
+        // move enemies — on reaching the defense line they stop and keep attacking
+        // the shared team HP pool. Enemies may overlap freely; they just pile up
+        // against the wall (each keeps its spawn X). Their sprite z-index
+        // (floor(y) ≈ wall line) already draws them above the wall sprite (z=5).
         const heroCollisionY = HERO_COLLISION_Y;
         const ENEMY_ATTACK_INTERVAL = 1.0;  // seconds between attacks
-        // Body radius per kind — used for both blocking (early stop) and 2D
-        // separation so the crowd packs against the wall without overlapping.
-        const bodyRadius = (e: Enemy) => (e.isBoss ? 40 : e.kind === 'brute' ? 26 : 17);
         let teamDmgThisTick = 0;
         let shakeAmpThisTick = 0;
         let anyAttackingThisTick = false;
-
-        const liveAttackers = s.enemies.filter((e) => e.attacking && e.dyingT === 0);
 
         for (const e of s.enemies) {
           if (e.dyingT > 0) {
@@ -373,25 +370,10 @@ export const Battle = () => {
           if (e.hitT > 0) e.hitT -= dt;
           if (!e.attacking) {
             e.y += e.vy * dt;
-            // Stop at the wall, OR when bumping into an enemy already attacking
-            // (so followers queue up behind the front rank instead of overlapping).
-            let blocked = e.y >= heroCollisionY;
-            if (!blocked) {
-              for (const other of liveAttackers) {
-                const dx = e.x - other.x;
-                const dy = e.y - other.y;
-                const minDist = bodyRadius(e) + bodyRadius(other);
-                if (dx * dx + dy * dy < minDist * minDist) {
-                  blocked = true;
-                  break;
-                }
-              }
-            }
-            if (blocked) {
-              if (e.y > heroCollisionY) e.y = heroCollisionY;
+            if (e.y >= heroCollisionY) {
+              e.y = heroCollisionY;
               e.attacking = true;
               e.attackT = 0;  // first attack happens after the first interval
-              liveAttackers.push(e);
             }
           } else {
             // Attacking the line: tick attack timer.
@@ -418,42 +400,6 @@ export const Battle = () => {
         if (anyAttackingThisTick) {
           triggerShake(shakeAmpThisTick);
           playSfx('hero_take_dmg');
-        }
-
-        // 2D positional correction — attacking enemies push apart in both axes so
-        // they pack against the wall in ranks (front rank at the line, followers
-        // stacking upward), never overlapping. Y is clamped to the wall so nobody
-        // shoves past it toward the heroes.
-        const SEP_ITERS = 2;
-        for (let iter = 0; iter < SEP_ITERS; iter++) {
-          for (let i = 0; i < liveAttackers.length; i++) {
-            const a = liveAttackers[i];
-            for (let j = i + 1; j < liveAttackers.length; j++) {
-              const b = liveAttackers[j];
-              let dx = a.x - b.x;
-              let dy = a.y - b.y;
-              const minDist = bodyRadius(a) + bodyRadius(b);
-              const distSq = dx * dx + dy * dy;
-              if (distSq >= minDist * minDist) continue;
-              const dist = Math.sqrt(distSq) || 0.01;
-              // Bias separation upward when nearly vertical-stacked so the queue
-              // grows away from the wall rather than jittering sideways.
-              if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
-                dx = (i % 2 === 0 ? 1 : -1) * 0.5;
-                dy = -0.5;
-              }
-              const overlap = (minDist - dist) / 2;
-              const nx = dx / dist;
-              const ny = dy / dist;
-              a.x += nx * overlap;
-              a.y += ny * overlap;
-              b.x -= nx * overlap;
-              b.y -= ny * overlap;
-            }
-            if (a.x < 30) a.x = 30;
-            if (a.x > GAME_W - 30) a.x = GAME_W - 30;
-            if (a.y > heroCollisionY) a.y = heroCollisionY;
-          }
         }
 
         // projectiles

@@ -1,0 +1,66 @@
+{
+  "id": "T-018-revert-enemy-separation",
+  "number": "T-018",
+  "title": "撤銷怪物排隊分散 — 怪物擠在牆線可重疊（回正 T-015/T-016 過度設計）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "review",
+  "owner": "claude",
+  "createdAt": "2026-05-29T19:20:00+08:00",
+  "updatedAt": "2026-05-29T19:30:00+08:00",
+  "lastReviewAt": "2026-05-29T19:30:00+08:00",
+  "dependencies": ["T-016-enemy-wall-queue-2d"],
+  "plan": {
+    "goal": "怪物到城牆就停在牆線、彼此可以重疊堆在牆前（不排陣列、不往上堆）。視覺上是一群怪擠在城牆前面攻擊，怪物畫在城牆圖片之上。",
+    "boundaryConditions": [
+      "撤銷 T-015 的 X 軸 push + T-016 的 2D 排隊 + 提早卡位",
+      "回到單純：怪物 y > heroCollisionY 停下變 attacking、x 維持 spawn 值（自然部分重疊）",
+      "怪物 z-index 已在城牆之上（min(900, floor(y)) vs 牆 z=5）— 確認不動",
+      "保留 teamHp 攻擊機制不變"
+    ],
+    "preflightChecks": [
+      "確認移除 separation 後怪物停在 y=heroCollisionY、x 各異（spawn random 60~GAME_W-60）→ 自然重疊",
+      "確認 liveAttackers 集合只用於攻擊判定（移除分散後是否還需要）",
+      "確認怪物 sprite z-index 仍高於城牆（怪物畫牆上面）"
+    ],
+    "expectedDeliverables": [
+      "怪物到牆停在牆線、可重疊堆疊（不排陣列、不往上堆）",
+      "怪物 sprite 視覺壓在城牆圖片之上",
+      "怪物持續攻擊防線不變",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "移除 T-016 的 2D positional correction + 提早卡位 blocked-by-attacker", "status": "done" },
+      { "id": "s2", "title": "簡化 enemy tick 回單純『到牆停下攻擊』", "status": "done" },
+      { "id": "s3", "title": "驗證：怪物擠牆可重疊、z 在牆上、攻擊正常", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "怪物大量重疊在同一點仍可能視覺擠成一坨 — 但這是 user 接受的（可重疊）",
+      "spawn x 是 random，所以實際會散落部分重疊而非完全疊一點"
+    ],
+    "referenceFiles": [
+      "app/src/battle/Battle.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-29T19:20:00+08:00",
+      "type": "note",
+      "msg": "User 澄清：不是要排陣列，怪物之間可以疊在一起，視覺應在城牆圖片上面。撤銷 T-015/T-016 的分散排隊（我過度設計），回到怪物擠牆線可重疊。z-index 已對（怪物 floor(y)≈735 > 牆 5）。"
+    },
+    {
+      "ts": "2026-05-29T19:30:00+08:00",
+      "type": "progress",
+      "msg": "移除 T-015 X-push + T-016 2D positional correction + 提早卡位 blocked-by-attacker + bodyRadius/liveAttackers helper。enemy tick 簡化回 T-010 版：怪物 y >= heroCollisionY 停、x 維持 spawn random、可重疊。怪物 z-index = min(900, floor(y)) ≈ 735 仍遠高於城牆 z=5，怪物畫在牆上面。typecheck pass。"
+    },
+    {
+      "ts": "2026-05-29T19:30:00+08:00",
+      "type": "review",
+      "msg": "邏輯 revert 完成。headless rAF throttle 看不到 runtime 怪潮，請 user 開瀏覽器確認：怪物擠牆可重疊、畫在城牆圖上面。待確認的細節：怪物中心停在 y=heroCollisionY（735）與牆中心（737）幾乎重合 = 怪物壓在牆上。若 user 要『怪物站在牆上方』而非壓牆，可再開單把停止線往上移（y = heroCollisionY - N）。"
+    }
+  ]
+}
