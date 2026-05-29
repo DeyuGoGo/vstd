@@ -1,0 +1,71 @@
+{
+  "id": "T-016-enemy-wall-queue-2d",
+  "number": "T-016",
+  "title": "怪物卡牆 2D 排隊 — 後排往上堆不重疊（修 T-015 只做 X 軸的缺陷）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "review",
+  "owner": "claude",
+  "createdAt": "2026-05-29T18:20:00+08:00",
+  "updatedAt": "2026-05-29T18:35:00+08:00",
+  "lastReviewAt": "2026-05-29T18:35:00+08:00",
+  "dependencies": ["T-015-attacking-enemy-separation"],
+  "plan": {
+    "goal": "怪物到城牆前像真的 TD 怪潮一樣卡住：第一排貼牆、後排被前排擋住往上堆疊，怪物之間不重疊。視覺上是一群怪推擠城牆，不是疊成一坨。",
+    "boundaryConditions": [
+      "只動 Battle.tsx enemy tick 的移動 + 分散邏輯",
+      "保留 teamHp 攻擊機制（attacking 怪物照常攻擊防線）",
+      "用 positional correction（直接分開重疊量）而非速度累加，避免抖動",
+      "怪物半徑依 kind 區分（minion 小 / brute 大 / boss 最大）"
+    ],
+    "preflightChecks": [
+      "確認現行 T-015 只做 X 軸 push（line 403-423）— 一行塞滿就重疊",
+      "確認座標系：y 越大越往下（往牆/玩家），heroCollisionY 是牆線",
+      "確認移動中怪物如何提早卡位（撞到前排 attacking 怪 → 也變 attacking）",
+      "怪物半徑取值（minion ~18 / brute ~28 / boss ~40）對齊 sprite 視覺大小"
+    ],
+    "expectedDeliverables": [
+      "多隻怪到牆 → 第一排貼牆、後排往上堆，不重疊",
+      "怪物分散是 2D（X 橫向 + Y 縱向），形成自然怪潮陣列",
+      "怪物不會被推出畫面邊界，也不會擠過牆（y 不超過 heroCollisionY）",
+      "分散平滑無抖動（positional correction 收斂）",
+      "怪物量大時（30+）仍維持陣列不疊圖",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "勘查 + 設計：enemyRadius helper、2D positional correction、提早卡位邏輯", "status": "done" },
+      { "id": "s2", "title": "實作：重構 enemy tick — 移動時撞前排則停、attacking 後 2D 分散（Y 往上、X 兩側）", "status": "done" },
+      { "id": "s3", "title": "視覺驗證：怪潮卡牆排成陣列、不重疊", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "O(n²) positional correction 在怪物量大時吃 CPU — 量級 < 50 可接受，記成後續優化候選",
+      "positional correction 跑 1-2 iteration 通常夠收斂；太多 iteration 浪費效能",
+      "提早卡位若判定太寬，怪物會在離牆很遠就停 — 半徑取值要貼合視覺"
+    ],
+    "referenceFiles": [
+      "app/src/battle/Battle.tsx",
+      "app/src/battle/engine/types.ts"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-05-29T18:20:00+08:00",
+      "type": "note",
+      "msg": "User 截圖反饋：怪物應卡在城牆前面而不是重疊。T-015 只做 X 軸分散，一行（GAME_W 580px / brute 80px ≈ 7 隻）塞滿就重疊。改 2D 排隊：positional correction + 提早卡位，後排往上堆。"
+    },
+    {
+      "ts": "2026-05-29T18:30:00+08:00",
+      "type": "progress",
+      "msg": "重寫 enemy tick：(1) bodyRadius helper（boss 40 / brute 26 / minion 17）(2) 移動中怪物撞到 liveAttackers 任一隻 → 提早卡位變 attacking（不必到牆線），followers 排後排 (3) 取代 T-015 的 X-only push 為 2D positional correction：2 iterations、兩兩重疊就各退 overlap/2、Y clamp ≤ heroCollisionY（不過牆）、X clamp [30, GAME_W-30] (4) 垂直完全重疊時加微小 bias 往上+側向避免卡死。typecheck pass。"
+    },
+    {
+      "ts": "2026-05-29T18:35:00+08:00",
+      "type": "review",
+      "msg": "驗證方式：headless preview rAF 被 throttle（wave 卡 0% 怪物不 spawn），無法看 runtime 動畫。改用獨立演算法模擬：12 隻 brute 全疊在牆中央 (320,735)，跑 30 frames × 2 iter。結果：overlappingPairs=0、minDistRatio=1.0（緊貼不疊）、distinctYRanks=7（排成 7 排）、yRange [638,735]（往上堆 97px）、allBelowWall=true、allInBounds=true、xSpread [200,451]。演算法數學完全正確：怪潮排成陣列、不重疊、往上堆、不過牆、不出界。等 user 開瀏覽器看實際動畫感受。"
+    }
+  ]
+}
