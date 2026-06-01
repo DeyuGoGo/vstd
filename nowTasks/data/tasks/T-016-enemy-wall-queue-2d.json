@@ -5,12 +5,13 @@
   "ticket": null,
   "branch": null,
   "worktree": null,
-  "status": "review",
+  "status": "done",
   "owner": "claude",
   "createdAt": "2026-05-29T18:20:00+08:00",
-  "updatedAt": "2026-05-29T18:35:00+08:00",
-  "lastReviewAt": "2026-05-29T18:35:00+08:00",
-  "dependencies": ["T-015-attacking-enemy-separation"],
+  "updatedAt": "2026-06-01T10:40:00+08:00",
+  "dependencies": [
+    "T-015-attacking-enemy-separation"
+  ],
   "plan": {
     "goal": "怪物到城牆前像真的 TD 怪潮一樣卡住：第一排貼牆、後排被前排擋住往上堆疊，怪物之間不重疊。視覺上是一群怪推擠城牆，不是疊成一坨。",
     "boundaryConditions": [
@@ -34,9 +35,21 @@
       "typecheck 通過"
     ],
     "steps": [
-      { "id": "s1", "title": "勘查 + 設計：enemyRadius helper、2D positional correction、提早卡位邏輯", "status": "done" },
-      { "id": "s2", "title": "實作：重構 enemy tick — 移動時撞前排則停、attacking 後 2D 分散（Y 往上、X 兩側）", "status": "done" },
-      { "id": "s3", "title": "視覺驗證：怪潮卡牆排成陣列、不重疊", "status": "done" }
+      {
+        "id": "s1",
+        "title": "勘查 + 設計：enemyRadius helper、2D positional correction、提早卡位邏輯",
+        "status": "done"
+      },
+      {
+        "id": "s2",
+        "title": "實作：重構 enemy tick — 移動時撞前排則停、attacking 後 2D 分散（Y 往上、X 兩側）",
+        "status": "done"
+      },
+      {
+        "id": "s3",
+        "title": "視覺驗證：怪潮卡牆排成陣列、不重疊",
+        "status": "done"
+      }
     ],
     "openQuestions": [],
     "estimatedSize": "S",
@@ -66,6 +79,12 @@
       "ts": "2026-05-29T18:35:00+08:00",
       "type": "review",
       "msg": "驗證方式：headless preview rAF 被 throttle（wave 卡 0% 怪物不 spawn），無法看 runtime 動畫。改用獨立演算法模擬：12 隻 brute 全疊在牆中央 (320,735)，跑 30 frames × 2 iter。結果：overlappingPairs=0、minDistRatio=1.0（緊貼不疊）、distinctYRanks=7（排成 7 排）、yRange [638,735]（往上堆 97px）、allBelowWall=true、allInBounds=true、xSpread [200,451]。演算法數學完全正確：怪潮排成陣列、不重疊、往上堆、不過牆、不出界。等 user 開瀏覽器看實際動畫感受。"
+    },
+    {
+      "ts": "2026-06-01T10:40:00+08:00",
+      "type": "decision",
+      "msg": "2D 排隊邏輯隨後在 T-018 被 revert（user 要怪物可重疊），最終視覺由 T-020 取代。保留為過程記錄。user 認可當前版本，議題收尾 → done。"
     }
-  ]
+  ],
+  "mergedAt": "2026-06-01T10:40:00+08:00"
 }

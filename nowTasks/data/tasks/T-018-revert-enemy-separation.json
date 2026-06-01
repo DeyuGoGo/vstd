@@ -5,12 +5,13 @@
   "ticket": null,
   "branch": null,
   "worktree": null,
-  "status": "review",
+  "status": "done",
   "owner": "claude",
   "createdAt": "2026-05-29T19:20:00+08:00",
-  "updatedAt": "2026-05-29T19:30:00+08:00",
-  "lastReviewAt": "2026-05-29T19:30:00+08:00",
-  "dependencies": ["T-016-enemy-wall-queue-2d"],
+  "updatedAt": "2026-06-01T10:40:00+08:00",
+  "dependencies": [
+    "T-016-enemy-wall-queue-2d"
+  ],
   "plan": {
     "goal": "怪物到城牆就停在牆線、彼此可以重疊堆在牆前（不排陣列、不往上堆）。視覺上是一群怪擠在城牆前面攻擊，怪物畫在城牆圖片之上。",
     "boundaryConditions": [
@@ -31,9 +32,21 @@
       "typecheck 通過"
     ],
     "steps": [
-      { "id": "s1", "title": "移除 T-016 的 2D positional correction + 提早卡位 blocked-by-attacker", "status": "done" },
-      { "id": "s2", "title": "簡化 enemy tick 回單純『到牆停下攻擊』", "status": "done" },
-      { "id": "s3", "title": "驗證：怪物擠牆可重疊、z 在牆上、攻擊正常", "status": "done" }
+      {
+        "id": "s1",
+        "title": "移除 T-016 的 2D positional correction + 提早卡位 blocked-by-attacker",
+        "status": "done"
+      },
+      {
+        "id": "s2",
+        "title": "簡化 enemy tick 回單純『到牆停下攻擊』",
+        "status": "done"
+      },
+      {
+        "id": "s3",
+        "title": "驗證：怪物擠牆可重疊、z 在牆上、攻擊正常",
+        "status": "done"
+      }
     ],
     "openQuestions": [],
     "estimatedSize": "S",
@@ -61,6 +74,12 @@
       "ts": "2026-05-29T19:30:00+08:00",
       "type": "review",
       "msg": "邏輯 revert 完成。headless rAF throttle 看不到 runtime 怪潮，請 user 開瀏覽器確認：怪物擠牆可重疊、畫在城牆圖上面。待確認的細節：怪物中心停在 y=heroCollisionY（735）與牆中心（737）幾乎重合 = 怪物壓在牆上。若 user 要『怪物站在牆上方』而非壓牆，可再開單把停止線往上移（y = heroCollisionY - N）。"
+    },
+    {
+      "ts": "2026-06-01T10:40:00+08:00",
+      "type": "decision",
+      "msg": "revert T-015/T-016 分散後，最終由 T-020（怪物站牆上方 + 前景牆遮腳）取代。過程記錄。user 認可當前版本 → done。"
     }
-  ]
+  ],
+  "mergedAt": "2026-06-01T10:40:00+08:00"
 }
