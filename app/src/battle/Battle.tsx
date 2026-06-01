@@ -20,6 +20,7 @@ import { Enemy as EnemyComp } from './components/Enemy';
 import { Projectile as ProjectileComp } from './components/Projectile';
 import { DmgPop } from './components/DmgPop';
 import { BottomBar } from './components/BottomBar';
+import { Z } from './zIndex';
 import { PauseOverlay } from './components/PauseOverlay';
 import { GameOverOverlay } from './components/GameOverOverlay';
 import { VictoryOverlay } from './components/VictoryOverlay';
@@ -32,8 +33,11 @@ const GAME_W = SCENE_DIMS.battle.w;
 const GAME_H = SCENE_DIMS.battle.h;
 const LINEUP_ANCHOR_X = GAME_W / 2;
 const LINEUP_ANCHOR_Y = GAME_H - 165;
-// 防線 Y：怪物穿越此 Y → 進 attacking 狀態。城牆 sprite 視覺對齊此線。
+// 防線 Y：城牆 sprite 視覺帶的基準線。
 const HERO_COLLISION_Y = LINEUP_ANCHOR_Y - 60;
+// 怪物攻擊停止線：比牆基準上移，讓怪物身體停在牆上方、腳進牆帶被前景牆遮住，
+// 形成「被城牆攔住、從牆後探出」的視覺。
+const ENEMY_STOP_Y = HERO_COLLISION_Y - 30;
 
 // 戰鬥時間倍率循環：dt 乘上此值，加速所有 dt-based 邏輯（怪物 / 彈道 / 攻速 /
 // spawn / regen / attacking）。玩家用頂部按鈕切換，比例不變、整體節奏倍速。
@@ -365,11 +369,11 @@ export const Battle = () => {
           }
         }
 
-        // move enemies — on reaching the defense line they stop and keep attacking
-        // the shared team HP pool. Enemies may overlap freely; they just pile up
-        // against the wall (each keeps its spawn X). Their sprite z-index
-        // (floor(y) ≈ wall line) already draws them above the wall sprite (z=5).
-        const heroCollisionY = HERO_COLLISION_Y;
+        // move enemies — on reaching the stop line they halt and keep attacking
+        // the shared team HP pool. Enemies may overlap freely; they pile up
+        // against the wall (each keeps its spawn X). They stop above the wall band
+        // so their feet enter it and get occluded by the front-wall layer.
+        const stopY = ENEMY_STOP_Y;
         const ENEMY_ATTACK_INTERVAL = 1.0;  // seconds between attacks
         let teamDmgThisTick = 0;
         let shakeAmpThisTick = 0;
@@ -383,8 +387,8 @@ export const Battle = () => {
           if (e.hitT > 0) e.hitT -= dt;
           if (!e.attacking) {
             e.y += e.vy * dt;
-            if (e.y >= heroCollisionY) {
-              e.y = heroCollisionY;
+            if (e.y >= stopY) {
+              e.y = stopY;
               e.attacking = true;
               e.attackT = 0;  // first attack happens after the first interval
             }
@@ -588,7 +592,7 @@ export const Battle = () => {
       <img src={`${import.meta.env.BASE_URL}img/arena-bg.png`} alt="" className={styles.bg} />
       <div className={styles.vignette} />
 
-      {/* 防線城牆 — 視覺指示 heroCollisionY 攻擊線 */}
+      {/* 防線城牆（背景層）— 在所有戰場元素後面 */}
       <img
         src={`${import.meta.env.BASE_URL}img/defense-wall.png`}
         alt=""
@@ -598,7 +602,24 @@ export const Battle = () => {
           left: 0,
           width: GAME_W,
           height: 40,
-          zIndex: 5,
+          zIndex: Z.WALL_BACK,
+          pointerEvents: 'none',
+          imageRendering: 'crisp-edges',
+        }}
+      />
+
+      {/* 防線城牆（前景層）— 蓋住停在牆上方的怪物的腳，做出「被牆攔住」的遮擋。
+          與背景層同圖同位置，只是 z 拉到怪物之上、劍士之下。 */}
+      <img
+        src={`${import.meta.env.BASE_URL}img/defense-wall.png`}
+        alt=""
+        style={{
+          position: 'absolute',
+          top: HERO_COLLISION_Y - 18,
+          left: 0,
+          width: GAME_W,
+          height: 40,
+          zIndex: Z.WALL_FRONT,
           pointerEvents: 'none',
           imageRendering: 'crisp-edges',
         }}

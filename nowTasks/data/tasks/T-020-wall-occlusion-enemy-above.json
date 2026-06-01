@@ -1,0 +1,71 @@
+{
+  "id": "T-020-wall-occlusion-enemy-above",
+  "number": "T-020",
+  "title": "怪物站牆上方 + 前景牆遮怪物腳（兩者都要）",
+  "ticket": null,
+  "branch": null,
+  "worktree": null,
+  "status": "review",
+  "owner": "claude",
+  "createdAt": "2026-06-01T10:00:00+08:00",
+  "updatedAt": "2026-06-01T10:20:00+08:00",
+  "lastReviewAt": "2026-06-01T10:20:00+08:00",
+  "dependencies": ["T-018-revert-enemy-separation"],
+  "plan": {
+    "goal": "怪物到牆停在牆上方外側（身體在牆上、腳進牆帶），城牆前景層遮住怪物的腳，視覺上像怪物被城牆攔住、從牆後探出身體。劍士在牆內側不被遮。",
+    "boundaryConditions": [
+      "怪物停止線上移（身體在牆上方），保留可重疊（不分散）",
+      "前景牆層複用 defense-wall.png，z-index 高於怪物",
+      "劍士 z-index 提到前景牆之上（牆內側守方本該在牆前），避免頭飾被前景牆切掉",
+      "不破壞彈道飛行可見性的整體觀感"
+    ],
+    "preflightChecks": [
+      "確認怪物 attacking 停止 y、城牆帶範圍 [717,757]、各 kind 半高",
+      "確認劍士容器中心 795 高 135 → 上緣 727 進牆帶，需提 z",
+      "確認 Z 層級排序：bg牆 < 怪物(100-900) < 前景牆 < 劍士 < HUD"
+    ],
+    "expectedDeliverables": [
+      "怪物停在牆上方、腳進牆帶被前景牆遮住、身體露出",
+      "怪物可重疊（不排陣列）",
+      "劍士頭/頭飾完整不被牆遮",
+      "城牆有明確阻擋感（怪物在外、劍士在內）",
+      "typecheck 通過"
+    ],
+    "steps": [
+      { "id": "s1", "title": "zIndex.ts 加 WALL_FRONT 層 + 提高 HERO 到前景牆之上", "status": "done" },
+      { "id": "s2", "title": "Battle.tsx 加 ENEMY_STOP_Y（上移）+ 前景牆 img", "status": "done" },
+      { "id": "s3", "title": "怪物 attacking 停止改用 ENEMY_STOP_Y", "status": "done" },
+      { "id": "s4", "title": "驗證：怪物站牆上方腳被遮、劍士頭完整、可重疊", "status": "done" }
+    ],
+    "openQuestions": [],
+    "estimatedSize": "S",
+    "riskNotes": [
+      "改 Z.HERO 從 10 提高會讓劍士畫在彈道之上 — 彈道從劍士射出那段被遮，但飛出後在怪物區照舊，影響小",
+      "brute 較高，腳可能略超出牆帶下緣露一點 — 可接受",
+      "停止線上移幅度要實機調，太多怪物離牆太遠、太少遮不到腳"
+    ],
+    "referenceFiles": [
+      "app/src/battle/Battle.tsx",
+      "app/src/battle/zIndex.ts",
+      "app/src/battle/components/Hero.tsx"
+    ],
+    "figmaNodes": []
+  },
+  "log": [
+    {
+      "ts": "2026-06-01T10:00:00+08:00",
+      "type": "note",
+      "msg": "User 看 T-018 後仍覺得怪物跨在牆上蓋住牆（沒阻擋感）。拍板『兩者都要』：怪物移到牆上方外側 + 前景牆遮怪物腳。需提劍士 z 避免頭飾被前景牆切。"
+    },
+    {
+      "ts": "2026-06-01T10:15:00+08:00",
+      "type": "progress",
+      "msg": "實作：(1) zIndex.ts 重排 — WALL_BACK 5 < PROJECTILE 20 < ENEMY 100-900 < WALL_FRONT 905 < HERO 910 < HUD 1000（HERO 從 10 提到 910，讓劍士在前景牆前）(2) Battle.tsx 加 ENEMY_STOP_Y = HERO_COLLISION_Y - 30（705）怪物停這 (3) 怪物 attacking 停止改用 stopY (4) 加前景牆 img（複用 defense-wall.png、同位置、z=WALL_FRONT）。typecheck pass。"
+    },
+    {
+      "ts": "2026-06-01T10:20:00+08:00",
+      "type": "review",
+      "msg": "DOM 層級驗證 PASS：背景牆 z5/top717、前景牆 z905/top717、劍士 z910/top795。數學推導：怪物停 y705 覆蓋 [661,749]，與牆帶 [717,757] 重疊 [717,749] 被前景牆(905>705)遮住腳、露出頭身 [661,717]；劍士容器 [727,862] 與牆帶重疊但 z910>905 不被遮、頭飾完整。preview rAF throttle 怪物不 spawn，動畫待 user 真實瀏覽器確認。劍士 z 提高副作用：彈道(20)從劍士射出那段被劍士蓋，飛出後在怪物區照舊，影響小。"
+    }
+  ]
+}
